@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
+import { playSciFiSound } from "@/utils/audioEngine";
 
 export interface GestureEngineState {
   rotationX: number;
@@ -22,7 +23,6 @@ interface UseGestureEngineOptions {
   smoothing?: number;
 }
 
-// 21-Joint Biomechanical Hand Skeleton Connections
 const HAND_CONNECTIONS: [number, number][] = [
   [0, 1], [1, 2], [2, 3], [3, 4],       // Thumb
   [0, 5], [5, 6], [6, 7], [7, 8],       // Index
@@ -31,42 +31,38 @@ const HAND_CONNECTIONS: [number, number][] = [
   [13, 17], [0, 17], [17, 18], [18, 19], [19, 20] // Pinky & Palm
 ];
 
-export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions = {}) {
+// 🚀 Strict Mode Tracking
+type InteractionMode = 'NONE' | 'UI_HOVER' | 'ROTATE' | 'ZOOM' | 'FIST';
+
+export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions = {}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const skeletonCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cursorDomRef = useRef<HTMLDivElement | null>(null);
   const dwellRingRef = useRef<SVGCircleElement | null>(null);
 
   const [isReady, setIsReady] = useState(false);
-  const [activeGestureLabel, setActiveGestureLabel] = useState<string>(
-    "INITIALIZING TOUCHLESS AI VISION..."
-  );
+  const [activeGestureLabel, setActiveGestureLabel] = useState<string>("INITIALIZING TOUCHLESS AI VISION...");
   const [isDissecting, setIsDissecting] = useState(false);
 
   const engineState = useRef<GestureEngineState>({
-    rotationX: 0.2,
-    rotationY: -0.4,
-    scale: 1,
-    panX: 0,
-    panY: 0,
-    isFist: false,
-    isPinching: false,
-    justPinched3D: false,
-    ndcX: 0,
-    ndcY: 0,
-    cursorX: 0,
-    cursorY: 0,
+    rotationX: 0.2, rotationY: -0.4, scale: 1, panX: 0, panY: 0,
+    isFist: false, isPinching: false, justPinched3D: false,
+    ndcX: 0, ndcY: 0, cursorX: 0, cursorY: 0,
   });
 
   const smoothCursor = useRef({ x: 0, y: 0 });
   const prevSinglePinch = useRef<{ x: number; y: number } | null>(null);
   const wasPinchingRef = useRef(false);
+  const wasFistRef = useRef(false);
 
-  // Dual-Hand Pinch Zoom & Position (Pan) Refs
+  // Zoom Refs
   const prevDualDistance = useRef<number | null>(null);
   const prevDualMidpoint = useRef<{ x: number; y: number } | null>(null);
 
-  // Magnetic Dwell-Click Refs
+  // Strict Action Lock State
+  const interactionMode = useRef<InteractionMode>('NONE');
+
+  // UI Hover Refs
   const hoveredElementRef = useRef<HTMLElement | null>(null);
   const hoverStartTimeRef = useRef<number>(0);
   const dwellTriggeredRef = useRef<boolean>(false);
@@ -86,72 +82,91 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
 
     async function initMediaPipe() {
       try {
-        // Stable WASM resolver
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-        );
-
+        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
         if (isCancelled) return;
-
         try {
           landmarker = await HandLandmarker.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath:
-                "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-              delegate: "GPU",
-            },
-            runningMode: "VIDEO",
-            numHands: 2,
-            minHandDetectionConfidence: 0.45,
-            minHandPresenceConfidence: 0.45,
-            minTrackingConfidence: 0.4,
+            baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate: "GPU" },
+            runningMode: "VIDEO", numHands: 2, minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5,
           });
         } catch {
           landmarker = await HandLandmarker.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath:
-                "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-              delegate: "CPU",
-            },
-            runningMode: "VIDEO",
-            numHands: 2,
-            minHandDetectionConfidence: 0.45,
-            minHandPresenceConfidence: 0.45,
-            minTrackingConfidence: 0.4,
+            baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate: "CPU" },
+            runningMode: "VIDEO", numHands: 2, minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5,
           });
         }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            frameRate: { ideal: 60 },
-          },
-        });
-
-        if (isCancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } } });
+        if (isCancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
           setIsReady(true);
-          setLabelSafe("TOUCHLESS READY • PINCH ROTATE • 2-HAND PINCH ZOOM/PAN");
+          setLabelSafe("READY • PINCH TO ROTATE • FIST TO DISSECT");
           detectLoop();
         }
       } catch (err) {
-        console.error("MediaPipe initialization error:", err);
-        setLabelSafe("CAMERA / VISION READY");
+        setLabelSafe("CAMERA ERROR (CHECK PERMISSIONS)");
       }
     }
 
-    function drawBiomechanicalSkeleton(
-      landmarksArray: any[][],
-      isFistNow: boolean,
-      isPinchingNow: boolean
-    ) {
+    function clearUIHover() {
+      if (hoveredElementRef.current) {
+        hoveredElementRef.current.removeAttribute("data-air-hover");
+        hoveredElementRef.current = null;
+      }
+      dwellTriggeredRef.current = false;
+      if (dwellRingRef.current) dwellRingRef.current.style.strokeDashoffset = "113";
+    }
+
+    function updateMagneticUIHover(screenX: number, screenY: number) {
+      const el = document.elementFromPoint(screenX, screenY) as HTMLElement | null;
+      const magneticTarget = el?.closest('[data-magnetic="true"]') as HTMLElement | null;
+
+      if (hoveredElementRef.current && hoveredElementRef.current !== magneticTarget) {
+        clearUIHover();
+      }
+
+      if (magneticTarget) {
+        if (hoveredElementRef.current !== magneticTarget) {
+          hoveredElementRef.current = magneticTarget;
+          hoverStartTimeRef.current = performance.now();
+          dwellTriggeredRef.current = false;
+          magneticTarget.setAttribute("data-air-hover", "true");
+          playSciFiSound('hover');
+        }
+
+        const progress = Math.min(1, (performance.now() - hoverStartTimeRef.current) / 1200); // 1.2s delay
+        if (dwellRingRef.current) dwellRingRef.current.style.strokeDashoffset = `${113 * (1 - progress)}`;
+
+        if (progress >= 1 && !dwellTriggeredRef.current) {
+          dwellTriggeredRef.current = true;
+          magneticTarget.click();
+          playSciFiSound('click');
+          if (dwellRingRef.current) dwellRingRef.current.style.strokeDashoffset = "113";
+        }
+      } else {
+        setLabelSafe("OPEN HAND • HOVER UI TO CLICK");
+      }
+    }
+
+    const isHandFist = (hand: any[]) => {
+      const wrist = hand[0];
+      const tips = [8, 12, 16, 20];
+      const pips = [6, 10, 14, 18]; // STRICT FIST: Compare fingertips to Middle Knuckles
+      let curled = 0;
+      for (let i = 0; i < 4; i++) {
+        const distTip = Math.hypot(hand[tips[i]].x - wrist.x, hand[tips[i]].y - wrist.y);
+        const distPip = Math.hypot(hand[pips[i]].x - wrist.x, hand[pips[i]].y - wrist.y);
+        if (distTip < distPip * 0.9) curled++; 
+      }
+      return curled >= 3;
+    };
+
+    const isHandPinching = (hand: any[]) => {
+      return Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y) < 0.05; 
+    };
+
+    function drawBiomechanicalSkeleton(landmarksArray: any[][], isFistNow: boolean, isPinchingNow: boolean) {
       const canvas = skeletonCanvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -186,75 +201,10 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
       });
     }
 
-    function updateMagneticUIHover(screenX: number, screenY: number, isPinchingNow: boolean) {
-      const el = document.elementFromPoint(screenX, screenY) as HTMLElement | null;
-      const magneticTarget = el?.closest('[data-magnetic="true"]') as HTMLElement | null;
-
-      if (hoveredElementRef.current && hoveredElementRef.current !== magneticTarget) {
-        hoveredElementRef.current.removeAttribute("data-air-hover");
-        hoveredElementRef.current = null;
-        dwellTriggeredRef.current = false;
-        if (dwellRingRef.current) {
-          dwellRingRef.current.style.strokeDashoffset = "113";
-        }
-      }
-
-      if (magneticTarget) {
-        if (hoveredElementRef.current !== magneticTarget) {
-          hoveredElementRef.current = magneticTarget;
-          hoverStartTimeRef.current = performance.now();
-          dwellTriggeredRef.current = false;
-          magneticTarget.setAttribute("data-air-hover", "true");
-        }
-
-        const elapsed = performance.now() - hoverStartTimeRef.current;
-        const dwellDuration = 600;
-        const progress = Math.min(1, elapsed / dwellDuration);
-
-        if (dwellRingRef.current) {
-          dwellRingRef.current.style.strokeDashoffset = `${113 * (1 - progress)}`;
-        }
-
-        if ((progress >= 1 || isPinchingNow) && !dwellTriggeredRef.current) {
-          dwellTriggeredRef.current = true;
-          magneticTarget.click();
-          if (dwellRingRef.current) {
-            dwellRingRef.current.style.strokeDashoffset = "113";
-          }
-        }
-        return true;
-      } else {
-        if (dwellRingRef.current) {
-          dwellRingRef.current.style.strokeDashoffset = "113";
-        }
-        return false;
-      }
-    }
-
-    const isHandFist = (hand: any[]) => {
-      const wrist = hand[0];
-      const tips = [8, 12, 16, 20];
-      const mcps = [5, 9, 13, 17];
-      let curled = 0;
-      for (let i = 0; i < 4; i++) {
-        const distTip = Math.hypot(hand[tips[i]].x - wrist.x, hand[tips[i]].y - wrist.y);
-        const distMcp = Math.hypot(hand[mcps[i]].x - wrist.x, hand[mcps[i]].y - wrist.y);
-        if (distTip < distMcp * 1.12) curled++;
-      }
-      return curled >= 3;
-    };
-
-    const isHandPinching = (hand: any[]) => {
-      const thumbTip = hand[4];
-      const indexTip = hand[8];
-      return Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y) < 0.06;
-    };
-
     let lastVideoTime = -1;
 
     function detectLoop() {
       if (isCancelled) return;
-
       const video = videoRef.current;
       if (video && landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
@@ -262,25 +212,23 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
         const hands = result.landmarks || [];
 
         if (hands.length === 0) {
-          drawBiomechanicalSkeleton([], false, false);
+          interactionMode.current = 'NONE';
           engineState.current.isFist = false;
-          engineState.current.isPinching = false;
-          prevSinglePinch.current = null;
-          prevDualDistance.current = null;
-          prevDualMidpoint.current = null;
           setIsDissecting(false);
-          setLabelSafe("SHOW HAND TO CONTROL 3D HOLOGRAM");
+          clearUIHover();
+          setLabelSafe("SHOW HAND TO CONTROL LAB");
+          drawBiomechanicalSkeleton([], false, false);
         } else {
-          const hand1 = hands[0];
-          const indexTip1 = hand1[8];
-
-          // 1. Smooth Cursor Tracking
-          const rawX = (1 - indexTip1.x) * window.innerWidth;
-          const rawY = indexTip1.y * window.innerHeight;
+          // 1. Move Cursor
+          const indexTip1 = hands[0][8];
+          const SENSITIVITY = 1.9; // Amplified sensitivity for ease of reach
+          let normX = Math.max(0, Math.min(1, 0.5 + (indexTip1.x - 0.5) * SENSITIVITY));
+          let normY = Math.max(0, Math.min(1, 0.5 + (indexTip1.y - 0.5) * SENSITIVITY));
+          const rawX = (1 - normX) * window.innerWidth;
+          const rawY = normY * window.innerHeight;
 
           smoothCursor.current.x += (rawX - smoothCursor.current.x) * smoothing;
           smoothCursor.current.y += (rawY - smoothCursor.current.y) * smoothing;
-
           const curX = smoothCursor.current.x;
           const curY = smoothCursor.current.y;
 
@@ -289,14 +237,13 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
           engineState.current.ndcX = (curX / window.innerWidth) * 2 - 1;
           engineState.current.ndcY = -(curY / window.innerHeight) * 2 + 1;
 
-          if (cursorDomRef.current) {
-            cursorDomRef.current.style.transform = `translate3d(${curX - 24}px, ${curY - 24}px, 0)`;
-          }
+          if (cursorDomRef.current) cursorDomRef.current.style.transform = `translate3d(${curX - 24}px, ${curY - 24}px, 0)`;
 
+          const hand1 = hands[0];
           const fist1 = isHandFist(hand1);
           const pinch1 = !fist1 && isHandPinching(hand1);
 
-          // 2. Check Dual-Hand Pinch for Zoom In/Out + Position Pan (X/Y)
+          // 2. Strict Actions Evaluation
           if (hands.length >= 2) {
             const hand2 = hands[1];
             const fist2 = isHandFist(hand2);
@@ -304,59 +251,41 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
 
             drawBiomechanicalSkeleton(hands, fist1 || fist2, pinch1 || pinch2);
 
-            if (fist1 || fist2) {
-              engineState.current.isFist = true;
-              setIsDissecting(true);
-              prevDualDistance.current = null;
-              prevDualMidpoint.current = null;
-              setLabelSafe("CLOSED FIST • RADIAL 3D DISSECTION ACTIVE");
-            } else if (pinch1 && pinch2) {
-              // BOTH HANDS PINCHING -> ZOOM IN/OUT + PAN POSITION!
-              engineState.current.isFist = false;
+            // 🚀 DUAL FISTS = STRICTLY ZOOM/PAN
+            if (fist1 && fist2) {
+              interactionMode.current = 'ZOOM';
+              engineState.current.isFist = false; // Disable dissection while zooming
               setIsDissecting(false);
+              wasFistRef.current = false;
+              clearUIHover();
 
-              const p1x = 1 - hand1[8].x;
-              const p1y = hand1[8].y;
-              const p2x = 1 - hand2[8].x;
-              const p2y = hand2[8].y;
-
-              const dist = Math.hypot(p1x - p2x, p1y - p2y);
-              const midX = (p1x + p2x) / 2;
-              const midY = (p1y + p2y) / 2;
+              // Palm center points for more stable tracking during fist
+              const p1 = hand1[9]; 
+              const p2 = hand2[9];
+              const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+              const midX = (p1.x + p2.x) / 2; 
+              const midY = (p1.y + p2.y) / 2;
 
               if (prevDualDistance.current !== null && prevDualMidpoint.current !== null) {
-                // Zoom In / Out based on hand distance change
-                const deltaDist = dist - prevDualDistance.current;
-                engineState.current.scale = Math.min(
-                  2.8,
-                  Math.max(0.45, engineState.current.scale + deltaDist * 3.2)
-                );
-
-                // Pan 3D Position (X/Y) based on midpoint movement
-                const deltaMidX = (midX - prevDualMidpoint.current.x) * 4.2;
-                const deltaMidY = -(midY - prevDualMidpoint.current.y) * 3.2;
-
-                engineState.current.panX = Math.max(
-                  -2.2,
-                  Math.min(2.2, engineState.current.panX + deltaMidX)
-                );
-                engineState.current.panY = Math.max(
-                  -1.5,
-                  Math.min(1.5, engineState.current.panY + deltaMidY)
-                );
+                // Zoom
+                engineState.current.scale = Math.min(2.8, Math.max(0.45, engineState.current.scale + (dist - prevDualDistance.current) * 3.5));
+                
+                // 🚨 PAN FIX: Left/Right natural movement (+)
+                engineState.current.panX = Math.max(-2.2, Math.min(2.2, engineState.current.panX + (midX - prevDualMidpoint.current.x) * 5.5));
+                
+                engineState.current.panY = Math.max(-1.5, Math.min(1.5, engineState.current.panY - (midY - prevDualMidpoint.current.y) * 3.5));
               }
-
               prevDualDistance.current = dist;
               prevDualMidpoint.current = { x: midX, y: midY };
-              prevSinglePinch.current = null;
-              setLabelSafe("DUAL-HAND PINCH • ZOOMING & MOVING 3D POSITION");
+              setLabelSafe("DUAL FISTS • ZOOMING & PANNING");
+
             } else {
               prevDualDistance.current = null;
               prevDualMidpoint.current = null;
-              // Fall back to single hand control with hand 1
               handleSingleHand(hand1, fist1, pinch1, curX, curY);
             }
           } else {
+            // SINGLE HAND MODE
             prevDualDistance.current = null;
             prevDualMidpoint.current = null;
             drawBiomechanicalSkeleton(hands, fist1, pinch1);
@@ -366,7 +295,6 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
           wasPinchingRef.current = pinch1;
         }
       }
-
       animationFrameId = requestAnimationFrame(detectLoop);
     }
 
@@ -377,36 +305,53 @@ export function useGestureEngine({ smoothing = 0.28 }: UseGestureEngineOptions =
       curX: number,
       curY: number
     ) {
-      engineState.current.isFist = fist1;
-      engineState.current.isPinching = pinch1;
-      setIsDissecting(fist1);
-
-      const isOverButton = updateMagneticUIHover(curX, curY, pinch1);
-
       if (fist1) {
-        prevSinglePinch.current = null;
-        setLabelSafe("CLOSED FIST • RADIAL 3D DISSECTION ACTIVE");
-      } else if (pinch1 && !isOverButton) {
-        if (!wasPinchingRef.current) {
-          engineState.current.justPinched3D = true;
-        }
-        if (prevSinglePinch.current) {
-          const dx = (curX - prevSinglePinch.current.x) * 0.011;
-          const dy = (curY - prevSinglePinch.current.y) * 0.011;
-          engineState.current.rotationY += dx;
-          engineState.current.rotationX = Math.max(
-            -1.35,
-            Math.min(1.35, engineState.current.rotationX + dy)
-          );
-        }
-        prevSinglePinch.current = { x: curX, y: curY };
-        setLabelSafe("PINCH DRAG • ROTATING 360° & SELECTING PART");
+        // 🚀 SINGLE FIST = STRICTLY DISSECT
+        interactionMode.current = 'FIST';
+        engineState.current.isFist = true;
+        setIsDissecting(true);
+        clearUIHover();
+
+        if (!wasFistRef.current) playSciFiSound('engage');
+        wasFistRef.current = true;
+        setLabelSafe("CLOSED FIST • RADIAL 3D DISSECTION");
       } else {
-        prevSinglePinch.current = null;
-        if (isOverButton) {
-          setLabelSafe("HOLD HOVER 0.6s OR PINCH TO CLICK");
+        engineState.current.isFist = false;
+        setIsDissecting(false);
+        wasFistRef.current = false;
+
+        if (pinch1) {
+          // 🚀 PINCH STARTED!
+          if (interactionMode.current === 'NONE' || interactionMode.current === 'UI_HOVER') {
+            const el = document.elementFromPoint(curX, curY) as HTMLElement | null;
+            const magneticTarget = el?.closest('[data-magnetic="true"]') as HTMLElement | null;
+
+            if (magneticTarget) {
+              interactionMode.current = 'UI_HOVER';
+              magneticTarget.click();
+              playSciFiSound('click');
+              clearUIHover(); 
+            } else {
+              interactionMode.current = 'ROTATE';
+              prevSinglePinch.current = { x: curX, y: curY };
+              engineState.current.justPinched3D = true;
+            }
+          }
+
+          // If Locked into ROTATE Mode, do rotation (Ignore buttons)
+          if (interactionMode.current === 'ROTATE' && prevSinglePinch.current) {
+            const dx = (curX - prevSinglePinch.current.x) * 0.012;
+            const dy = (curY - prevSinglePinch.current.y) * 0.012;
+            engineState.current.rotationY += dx;
+            engineState.current.rotationX = Math.max(-1.35, Math.min(1.35, engineState.current.rotationX + dy));
+            prevSinglePinch.current = { x: curX, y: curY };
+            setLabelSafe("PINCH DRAG • ROTATING 360°");
+          }
         } else {
-          setLabelSafe("OPEN HAND • PINCH TO ROTATE • FIST TO DISSECT");
+          // 🚀 COMPLETELY OPEN HAND
+          interactionMode.current = 'NONE';
+          prevSinglePinch.current = null;
+          updateMagneticUIHover(curX, curY); // Allow Dwell Hover only when open hand
         }
       }
     }

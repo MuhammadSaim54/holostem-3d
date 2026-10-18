@@ -10,6 +10,7 @@ import {
   ContactShadows,
   Sparkles,
   Stars,
+  Grid
 } from "@react-three/drei";
 import {
   Bot,
@@ -31,7 +32,11 @@ import {
   Cpu,
   User,
   Square,
+  Search,
+  Loader2
 } from "lucide-react";
+import { VERIFIED_CLOUD_MODELS } from "./ModelLibraryModal";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { useGestureEngine, GestureEngineState } from "@/hooks/useGestureEngine";
 import {
   saveCustomLessonToDB,
@@ -39,6 +44,7 @@ import {
   clearCustomLessonFromDB,
 } from "@/utils/lessonStorage";
 import * as THREE from "three";
+import ModelLibraryModal, { CloudGlbAsset, SketchfabSearchResult } from "./ModelLibraryModal";
 
 type StemModelId = "atom" | "dna" | "earth" | "custom";
 
@@ -974,8 +980,8 @@ function UploadedGlbModel({
       const clonedMat = Array.isArray(mesh.material)
         ? mesh.material.map((m) => m.clone())
         : mesh.material
-        ? mesh.material.clone()
-        : new THREE.MeshStandardMaterial({ color: "#a855f7" });
+          ? mesh.material.clone()
+          : new THREE.MeshStandardMaterial({ color: "#a855f7" });
       mesh.material = clonedMat;
 
       const geom = mesh.geometry;
@@ -1132,91 +1138,64 @@ function UploadedGlbModel({
   );
 }
 
+
 // =========================================================
 // MASTER 3D CONTROLLER WRAPPER
 // =========================================================
-function GestureControlledStage({
-  engineState,
-  activeModel,
-  customGlbUrl,
-  manualDissect,
-  selectedPartId,
-  isEmbeddedInSlide,
-  onSelectPart,
-  onExtractedCustomSpecs,
-  onGlbError,
-}: {
-  engineState: React.MutableRefObject<GestureEngineState>;
-  activeModel: StemModelId;
-  customGlbUrl: string | null;
-  manualDissect: boolean;
-  selectedPartId: string | null;
-  isEmbeddedInSlide: boolean;
-  onSelectPart: (partId: string) => void;
-  onExtractedCustomSpecs: (cards: PropertyCard[]) => void;
-  onGlbError: () => void;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
+function GestureControlledStage({ engineState, activeModel, customGlbUrl, manualDissect, selectedPartId, isEmbeddedInSlide, onSelectPart, onExtractedCustomSpecs, onGlbError }: any) {
+  const groupRef = useRef<THREE.Group>(null); 
   const explodeFactor = useRef<number>(0);
+  
+  // 🎥 Cinematic Intro Animation Ref
+  const introFactor = useRef<number>(0);
+
+  // Jab bhi naya model load ho, intro animation ko 0 par reset karein
+  useEffect(() => {
+    introFactor.current = 0;
+  }, [activeModel, customGlbUrl]);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    const state = engineState.current;
+    if (!groupRef.current) return; 
+    const s = engineState.current;
+
+    // 🚀 Smoothly animate intro from 0 to 1
+    introFactor.current = THREE.MathUtils.damp(introFactor.current, 1, 4.5, delta);
+    
+    // Scale multiplier aur 360-degree spin calculate karein
+    const introScale = introFactor.current;
+    const introSpin = (1 - introFactor.current) * (Math.PI * 2); // 360° Spin
 
     if (isEmbeddedInSlide) {
-      groupRef.current.position.x = THREE.MathUtils.damp(groupRef.current.position.x, 1.62, 8, delta);
-      groupRef.current.position.y = THREE.MathUtils.damp(groupRef.current.position.y, 0.04, 8, delta);
-      groupRef.current.scale.setScalar(
-        THREE.MathUtils.damp(groupRef.current.scale.x, 0.72, 8, delta)
+      groupRef.current.position.lerp(new THREE.Vector3(1.62, 0.04, 0), delta * 8);
+      groupRef.current.scale.setScalar(THREE.MathUtils.damp(groupRef.current.scale.x, 0.72 * introScale, 8, delta));
+      s.rotationY += delta * 0.25;
+      groupRef.current.rotation.set(
+        THREE.MathUtils.damp(groupRef.current.rotation.x, 0.2, 8, delta), 
+        THREE.MathUtils.damp(groupRef.current.rotation.y, s.rotationY + introSpin, 8, delta), 
+        0
       );
-      state.rotationY += delta * 0.25;
-      groupRef.current.rotation.y = THREE.MathUtils.damp(groupRef.current.rotation.y, state.rotationY, 8, delta);
-      groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, 0.2, 8, delta);
     } else {
-      groupRef.current.rotation.y = THREE.MathUtils.damp(groupRef.current.rotation.y, state.rotationY, 10, delta);
-      groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, state.rotationX, 10, delta);
-
-      const nextScale = THREE.MathUtils.damp(groupRef.current.scale.x, state.scale, 10, delta);
-      groupRef.current.scale.setScalar(nextScale);
-
-      groupRef.current.position.x = THREE.MathUtils.damp(groupRef.current.position.x, state.panX, 8, delta);
-      groupRef.current.position.y = THREE.MathUtils.damp(groupRef.current.position.y, state.panY, 8, delta);
+      groupRef.current.rotation.set(
+        THREE.MathUtils.damp(groupRef.current.rotation.x, s.rotationX, 10, delta), 
+        THREE.MathUtils.damp(groupRef.current.rotation.y, s.rotationY + introSpin, 10, delta), 
+        0
+      );
+      groupRef.current.scale.setScalar(THREE.MathUtils.damp(groupRef.current.scale.x, s.scale * introScale, 10, delta));
+      groupRef.current.position.lerp(new THREE.Vector3(s.panX, s.panY, 0), delta * 8);
     }
-
-    const shouldExplode = state.isFist || manualDissect;
-    explodeFactor.current = THREE.MathUtils.damp(explodeFactor.current, shouldExplode ? 1 : 0, 7, delta);
+    
+    explodeFactor.current = THREE.MathUtils.damp(explodeFactor.current, (s.isFist || manualDissect) ? 1 : 0, 7, delta);
   });
 
   return (
     <Float speed={1.2} rotationIntensity={0.05} floatIntensity={0.15}>
       <group ref={groupRef}>
-        {activeModel === "atom" && (
-          <AtomModel explodeFactor={explodeFactor} selectedPartId={selectedPartId} />
-        )}
-        {activeModel === "dna" && (
-          <DnaModel explodeFactor={explodeFactor} selectedPartId={selectedPartId} />
-        )}
-        {activeModel === "earth" && (
-          <Suspense fallback={null}>
-            <PhotorealisticEarthModel
-              explodeFactor={explodeFactor}
-              selectedPartId={selectedPartId}
-              onSelectPart={onSelectPart}
-            />
-          </Suspense>
-        )}
+        {activeModel === "atom" && <AtomModel explodeFactor={explodeFactor} selectedPartId={selectedPartId} />}
+        {activeModel === "dna" && <DnaModel explodeFactor={explodeFactor} selectedPartId={selectedPartId} />}
+        {activeModel === "earth" && <Suspense fallback={null}><PhotorealisticEarthModel explodeFactor={explodeFactor} selectedPartId={selectedPartId} onSelectPart={onSelectPart} /></Suspense>}
         {activeModel === "custom" && customGlbUrl && (
           <GlbErrorBoundary key={customGlbUrl} onErrorFallback={onGlbError}>
-            <Suspense fallback={null}>
-              <UploadedGlbModel
-                url={customGlbUrl}
-                explodeFactor={explodeFactor}
-                engineState={engineState}
-                selectedPartId={selectedPartId}
-                onSelectPart={onSelectPart}
-                onExtractedSpecs={onExtractedCustomSpecs}
-              />
-            </Suspense>
+            <Suspense fallback={null}><UploadedGlbModel url={customGlbUrl} explodeFactor={explodeFactor} engineState={engineState} selectedPartId={selectedPartId} onSelectPart={onSelectPart} onExtractedSpecs={onExtractedCustomSpecs} /></Suspense>
           </GlbErrorBoundary>
         )}
       </group>
@@ -1235,6 +1214,10 @@ export default function SpatialStage() {
   const slideInputRef = useRef<HTMLInputElement>(null);
   const rawGlbBlobRef = useRef<Blob | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Model Library Modal States
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState("");
 
   const [mode, setMode] = useState<"2D" | "3D">("2D");
   const [activeModel, setActiveModel] = useState<StemModelId>("atom");
@@ -1389,11 +1372,11 @@ export default function SpatialStage() {
   const currentSpec: ModelSpec =
     displayedModel === "custom"
       ? {
-          title: customModelName,
-          category: customCategory,
-          summary: customSummary,
-          properties: customProperties,
-        }
+        title: customModelName,
+        category: customCategory,
+        summary: customSummary,
+        properties: customProperties,
+      }
       : MODEL_SPECS[displayedModel];
 
   const activePartCard = currentSpec.properties.find((p) => p.id === selectedPartId) || null;
@@ -1465,6 +1448,33 @@ export default function SpatialStage() {
     setCustomGlbUrl(url);
     setActiveModel("custom");
     setIsBuilderOpen(true);
+  };
+
+  // LIBRARY IMPORT FUNCTIONS
+  const handleImportCloudModel = (item: CloudGlbAsset) => {
+    setIsLibraryOpen(false);
+    setDownloadStatus(`Importing "${item.name}"...`);
+    resetView();
+    setCustomModelName(item.name);
+    setCustomCategory(item.category);
+    setCustomSummary(item.description);
+    setCustomProperties([]);
+    setCustomGlbUrl(item.glbUrl);
+    setActiveModel("custom");
+    setMode("3D");
+    setDownloadStatus("");
+
+    // Background mein file fetch kar ke IndexedDB/blob ke liye save karna
+    fetch(item.glbUrl)
+      .then(r => r.ok ? r.blob() : null)
+      .then(b => { if (b) rawGlbBlobRef.current = b; })
+      .catch(() => { });
+  };
+
+  const handleImportSketchfabModel = async (model: SketchfabSearchResult, token: string) => {
+    setIsLibraryOpen(false);
+    setDownloadStatus("⚠️ API sends ZIP files. Please download .GLB manually from Sketchfab & Upload Locally!");
+    setTimeout(() => setDownloadStatus(""), 5000);
   };
 
   const applyPresetTemplate = (preset: (typeof TEACHER_PRESETS)[0]) => {
@@ -1558,9 +1568,9 @@ export default function SpatialStage() {
       const partContext = activePartCard
         ? `Currently isolated component is ${activePartCard.name} (${activePartCard.metric}) — ${activePartCard.description}`
         : `Primary subsystems include ${currentSpec.properties
-            .slice(0, 3)
-            .map((p) => p.name)
-            .join(", ")}.`;
+          .slice(0, 3)
+          .map((p) => p.name)
+          .join(", ")}.`;
 
       const fallbackReply = `Analyzing ${currentSpec.title} (${currentSpec.category}): ${currentSpec.summary} ${partContext}`;
       setChatHistory((prev) => [...prev, { role: "ai", text: fallbackReply }]);
@@ -1665,9 +1675,8 @@ export default function SpatialStage() {
       {/* PERSISTENT THREE.JS TOUCHLESS HOLOGRAM CANVAS             */}
       {/* ========================================================= */}
       <div
-        className={`absolute inset-0 z-10 transition-all duration-500 ${
-          isAiOpen && mode === "2D" ? "opacity-30 blur-[2px]" : "opacity-100"
-        }`}
+        className={`absolute inset-0 z-10 transition-all duration-500 ${isAiOpen && mode === "2D" ? "opacity-30 blur-[2px]" : "opacity-100"
+          }`}
       >
         <Canvas camera={{ position: [0, 0, 5.0], fov: 42 }} className="w-full h-full block">
           <color attach="background" args={["#04020a"]} />
@@ -1676,6 +1685,19 @@ export default function SpatialStage() {
           <directionalLight position={[6, 6, 6]} intensity={2.2} />
           <pointLight position={[-5, -3, 3]} intensity={1.6} color="#a855f7" />
           <pointLight position={[4, -4, -3]} intensity={1.2} color="#38bdf8" />
+          {/* 🌐 PREMIUM SCI-FI HOLODECK GRID */}
+          <Grid
+            position={[0, -1.8, 0]}
+            args={[20, 20]}
+            cellSize={0.25}
+            cellThickness={1}
+            cellColor="#a855f7" 
+            sectionSize={1.5}
+            sectionThickness={1.5}
+            sectionColor="#22d3ee" 
+            fadeDistance={8}
+            fadeStrength={1.5}
+          />
           <Suspense fallback={null}>
             <Environment preset="city" />
           </Suspense>
@@ -1688,7 +1710,7 @@ export default function SpatialStage() {
             selectedPartId={selectedPartId}
             isEmbeddedInSlide={mode === "2D" && !currentSlide.imageUrl}
             onSelectPart={focusOnPart}
-            onExtractedCustomSpecs={(extracted) => {
+            onExtractedCustomSpecs={(extracted: PropertyCard[]) => {
               setCustomProperties((prev) => (prev.length > 0 ? prev : extracted));
             }}
             onGlbError={() => {
@@ -1696,8 +1718,15 @@ export default function SpatialStage() {
               setActiveModel("atom");
             }}
           />
+          
+          <EffectComposer>
+            <Bloom
+              luminanceThreshold={0.85}
+              mipmapBlur
+              intensity={0.6}
+            />
+          </EffectComposer>
 
-          <ContactShadows position={[0, -2.1, 0]} opacity={0.5} scale={8} blur={2.4} far={4} color="#7e22ce" />
         </Canvas>
       </div>
 
@@ -1708,9 +1737,8 @@ export default function SpatialStage() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 bg-[#090514]/90 border border-white/15 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg">
             <span
-              className={`h-2.5 w-2.5 rounded-full animate-pulse ${
-                showProperties ? "bg-cyan-400 shadow-[0_0_12px_#22d3ee]" : "bg-purple-400"
-              }`}
+              className={`h-2.5 w-2.5 rounded-full animate-pulse ${showProperties ? "bg-cyan-400 shadow-[0_0_12px_#22d3ee]" : "bg-purple-400"
+                }`}
             />
             <span className="text-xs font-mono tracking-wider text-purple-200">
               {activeGestureLabel}
@@ -1723,6 +1751,22 @@ export default function SpatialStage() {
               <span>LESSON SAVED IN BROWSER</span>
             </div>
           )}
+
+          {downloadStatus && (
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 font-mono text-xs backdrop-blur-md">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>{downloadStatus}</span>
+            </div>
+          )}
+
+          <button
+            data-magnetic="true"
+            onClick={() => setIsLibraryOpen(true)}
+            className="px-4 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-400/50 text-cyan-200 text-xs font-mono uppercase font-bold flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            <span>Search 3D Models</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -1735,11 +1779,10 @@ export default function SpatialStage() {
                 return !prev;
               });
             }}
-            className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${
-              isAiOpen
-                ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black border-white shadow-[0_0_30px_rgba(34,211,238,0.6)]"
-                : "bg-[#090514]/90 border-purple-400/50 text-purple-200 hover:border-purple-300"
-            }`}
+            className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${isAiOpen
+              ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black border-white shadow-[0_0_30px_rgba(34,211,238,0.6)]"
+              : "bg-[#090514]/90 border-purple-400/50 text-purple-200 hover:border-purple-300"
+              }`}
           >
             <SparklesIcon className="w-4 h-4" />
             <span>{isAiOpen ? "Close AI Co-Pilot" : "AI Co-Pilot"}</span>
@@ -1765,11 +1808,10 @@ export default function SpatialStage() {
                   setManualDissect(true);
                 }
               }}
-              className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${
-                showProperties
-                  ? "bg-cyan-400 text-black border-cyan-200 shadow-[0_0_25px_rgba(34,211,238,0.6)]"
-                  : "bg-[#090514]/90 border-purple-400/40 text-purple-200"
-              }`}
+              className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${showProperties
+                ? "bg-cyan-400 text-black border-cyan-200 shadow-[0_0_25px_rgba(34,211,238,0.6)]"
+                : "bg-[#090514]/90 border-purple-400/40 text-purple-200"
+                }`}
             >
               <Layers className="w-4 h-4" />
               <span>{showProperties ? "Close Dissect" : "Dissect Model"}</span>
@@ -1855,11 +1897,10 @@ export default function SpatialStage() {
               <button
                 data-magnetic="true"
                 onClick={toggleVoiceMute}
-                className={`px-3 py-1.5 rounded-xl border text-[11px] font-mono font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all data-[air-hover=true]:scale-105 ${
-                  voiceReadout
-                    ? "bg-cyan-500/20 border-cyan-400/50 text-cyan-200"
-                    : "bg-rose-500/20 border-rose-400/40 text-rose-300"
-                }`}
+                className={`px-3 py-1.5 rounded-xl border text-[11px] font-mono font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all data-[air-hover=true]:scale-105 ${voiceReadout
+                  ? "bg-cyan-500/20 border-cyan-400/50 text-cyan-200"
+                  : "bg-rose-500/20 border-rose-400/40 text-rose-300"
+                  }`}
               >
                 {voiceReadout ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                 <span>{voiceReadout ? "Audio ON" : "Muted"}</span>
@@ -1885,26 +1926,23 @@ export default function SpatialStage() {
             {chatHistory.map((msg, i) => (
               <div
                 key={i}
-                className={`flex items-start gap-2.5 ${
-                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                }`}
+                className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                  }`}
               >
                 <div
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
-                    msg.role === "user"
-                      ? "bg-purple-600/30 border-purple-400/50 text-purple-200"
-                      : "bg-cyan-500/20 border-cyan-400/50 text-cyan-300"
-                  }`}
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${msg.role === "user"
+                    ? "bg-purple-600/30 border-purple-400/50 text-purple-200"
+                    : "bg-cyan-500/20 border-cyan-400/50 text-cyan-300"
+                    }`}
                 >
                   {msg.role === "user" ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                 </div>
 
                 <div
-                  className={`max-w-[84%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-lg ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-br from-purple-600/40 to-indigo-900/50 border border-purple-400/40 text-white rounded-tr-sm"
-                      : "bg-white/[0.05] border border-white/12 text-white/90 rounded-tl-sm"
-                  }`}
+                  className={`max-w-[84%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-lg ${msg.role === "user"
+                    ? "bg-gradient-to-br from-purple-600/40 to-indigo-900/50 border border-purple-400/40 text-white rounded-tr-sm"
+                    : "bg-white/[0.05] border border-white/12 text-white/90 rounded-tl-sm"
+                    }`}
                 >
                   {msg.text}
                 </div>
@@ -1953,11 +1991,10 @@ export default function SpatialStage() {
               <button
                 data-magnetic="true"
                 onClick={startVoiceMic}
-                className={`px-3 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
-                  isListeningMic
-                    ? "bg-rose-500 text-white animate-pulse shadow-[0_0_15px_#f43f5e]"
-                    : "bg-cyan-500/20 hover:bg-cyan-400 hover:text-black text-cyan-200 border border-cyan-400/30 data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"
-                }`}
+                className={`px-3 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${isListeningMic
+                  ? "bg-rose-500 text-white animate-pulse shadow-[0_0_15px_#f43f5e]"
+                  : "bg-cyan-500/20 hover:bg-cyan-400 hover:text-black text-cyan-200 border border-cyan-400/30 data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"
+                  }`}
               >
                 <Mic className="w-3.5 h-3.5" />
                 <span>{isListeningMic ? "Listening" : "Voice"}</span>
@@ -1990,9 +2027,8 @@ export default function SpatialStage() {
       {/* ========================================================= */}
       {mode === "2D" && (
         <section
-          className={`pointer-events-none absolute inset-x-28 top-20 bottom-24 z-20 flex items-center transition-all duration-500 ${
-            isAiOpen ? "opacity-25 blur-[3px] scale-[0.98]" : "opacity-100 blur-0 scale-100"
-          }`}
+          className={`pointer-events-none absolute inset-x-28 top-20 bottom-24 z-20 flex items-center transition-all duration-500 ${isAiOpen ? "opacity-25 blur-[3px] scale-[0.98]" : "opacity-100 blur-0 scale-100"
+            }`}
         >
           {currentSlide.imageUrl ? (
             <div className="w-full h-full rounded-[32px] bg-black/85 border border-white/15 p-8 backdrop-blur-2xl flex flex-col justify-between shadow-2xl">
@@ -2112,11 +2148,10 @@ export default function SpatialStage() {
       {/* INTERACTIVE SCIENTIFIC PROPERTY INSPECTOR DRAWER (3D MODE ONLY) */}
       {mode === "3D" && (
         <aside
-          className={`absolute top-22 right-28 z-30 w-96 max-h-[72vh] overflow-y-auto flex flex-col gap-3 transition-all duration-500 pr-1 ${
-            showProperties
-              ? "opacity-100 translate-x-0 pointer-events-auto"
-              : "opacity-0 translate-x-12 pointer-events-none"
-          }`}
+          className={`absolute top-22 right-28 z-30 w-96 max-h-[72vh] overflow-y-auto flex flex-col gap-3 transition-all duration-500 pr-1 ${showProperties
+            ? "opacity-100 translate-x-0 pointer-events-auto"
+            : "opacity-0 translate-x-12 pointer-events-none"
+            }`}
         >
           <div className="bg-[#080514]/90 border border-cyan-400/40 px-4 py-2.5 rounded-2xl backdrop-blur-xl flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-widest text-cyan-300">
@@ -2146,11 +2181,10 @@ export default function SpatialStage() {
                 role="button"
                 data-magnetic="true"
                 onClick={() => focusOnPart(prop.id)}
-                className={`cursor-pointer text-left transition-all p-4 rounded-2xl backdrop-blur-xl shadow-2xl border ${
-                  isSelected
-                    ? "bg-cyan-950/90 border-cyan-400 scale-[1.02] shadow-[0_0_25px_rgba(34,211,238,0.45)]"
-                    : "bg-[#080514]/85 border-white/15 hover:border-purple-400/60"
-                } data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-[1.02]`}
+                className={`cursor-pointer text-left transition-all p-4 rounded-2xl backdrop-blur-xl shadow-2xl border ${isSelected
+                  ? "bg-cyan-950/90 border-cyan-400 scale-[1.02] shadow-[0_0_25px_rgba(34,211,238,0.45)]"
+                  : "bg-[#080514]/85 border-white/15 hover:border-purple-400/60"
+                  } data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-[1.02]`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
@@ -2414,11 +2448,10 @@ export default function SpatialStage() {
                   resetView();
                   setActiveModel(item.id);
                 }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all ${
-                  activeModel === item.id
-                    ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-                    : "bg-white/5 text-white/70 hover:bg-white/10"
-                } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
+                className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all ${activeModel === item.id
+                  ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
+                  : "bg-white/5 text-white/70 hover:bg-white/10"
+                  } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
               >
                 {item.label}
               </button>
@@ -2431,11 +2464,10 @@ export default function SpatialStage() {
                   resetView();
                   setActiveModel("custom");
                 }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all capitalize ${
-                  activeModel === "custom"
-                    ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-                    : "bg-white/5 text-white/70 hover:bg-white/10"
-                }`}
+                className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all capitalize ${activeModel === "custom"
+                  ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
+                  : "bg-white/5 text-white/70 hover:bg-white/10"
+                  }`}
               >
                 {customModelName.slice(0, 18)}
               </button>
@@ -2485,9 +2517,8 @@ export default function SpatialStage() {
       {/* BIOMECHANICAL 21-JOINT SKELETON HUD OVERLAY               */}
       {/* ========================================================= */}
       <div
-        className={`absolute bottom-5 right-6 z-30 rounded-2xl border border-purple-500/50 overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)] bg-black transition-all duration-300 ${
-          isCinemaMode ? "w-32 opacity-50" : "w-52 opacity-100"
-        }`}
+        className={`absolute bottom-5 right-6 z-30 rounded-2xl border border-purple-500/50 overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)] bg-black transition-all duration-300 ${isCinemaMode ? "w-32 opacity-50" : "w-52 opacity-100"
+          }`}
       >
         <div className="relative w-full aspect-video">
           <video
@@ -2535,6 +2566,14 @@ export default function SpatialStage() {
         </svg>
         <div className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_10px_#fff]" />
       </div>
+
+      {/* 3D LIBRARY MODAL */}
+      <ModelLibraryModal
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        onImportCloudModel={handleImportCloudModel}
+        onImportSketchfabModel={handleImportSketchfabModel}
+      />
     </main>
   );
 }
