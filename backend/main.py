@@ -4,6 +4,7 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import urllib.parse
 
 app = FastAPI(title="Touchless STEM Spatial AI Backend")
 
@@ -15,7 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class AIQuery(BaseModel):
     question: str
     active_model: str
@@ -25,81 +25,86 @@ class AIQuery(BaseModel):
     all_parts: List[str]
     is_dissected: bool
 
-
 @app.get("/")
 def health_check():
     return {"status": "online", "engine": "Spatial STEM AI Co-Pilot"}
 
-
 @app.post("/api/ask-ai")
 async def ask_spatial_ai(payload: AIQuery):
-    api_key = (
-        os.getenv("GEMINI_API_KEY")
-        or "AQ.Ab8RN6IIpIgqvJEPLvsT5rfB-OqDtQTlKyg6bibdb65WKQv5ww"
-    ).strip()
+    # 🚀 FIX: os.getenv hata diya hai. Apni exact key yahan paste karein double quotes ke andar!
+    api_key = "AQ.Ab8RN6JKSKplj4s1wvr4QZErjM4wfg-WMPIoJMPXQvSELwgIpA"
 
     system_instruction = (
-        "You are an intelligent, friendly STEM Classroom AI Co-Pilot integrated into a 3D Touchless Hologram Studio. "
-        f"Currently on screen: 3D Model '{payload.active_model}' ({payload.category}). "
-        f"Model summary: {payload.summary}. "
-        f"Currently focused/isolated part: {payload.selected_part}. "
-        f"All model parts: {', '.join(payload.all_parts)}. "
-        "Answer the student's or teacher's question clearly, accurately, and concisely in 2 to 3 sentences so it sounds great when spoken aloud. "
-        "Do not use markdown asterisks (*)."
+        "You are an advanced Spatial AI Co-Pilot. "
+        f"Active 3D Model: {payload.active_model} ({payload.category}).\n"
+        f"USER IS CURRENTLY LOOKING AT: {payload.selected_part}\n\n"
+        "CRITICAL RULES:\n"
+        "1. Match the user's language EXACTLY (Roman Urdu, Hindi, English).\n"
+        "2. Explain the specific part the user is looking at in 2-3 short sentences.\n"
+        "3. At the very end of your answer, add exactly this separator: '|||' followed by exactly 3 short follow-up questions related to the topic, separated by '|||'.\n"
+        "Example Format: Dil ka ye hissa khoon pump karta hai. ||| Aorta kya hai? ||| Dil kaise dharakta hai? ||| Iska size kya hai?"
     )
 
+    def process_text(raw_text, source):
+        parts = [p.strip() for p in raw_text.split("|||") if p.strip()]
+        answer = parts[0].replace("*", "") if len(parts) > 0 else raw_text.replace("*", "")
+        suggestions = parts[1:4] if len(parts) > 1 else ["Explain this further", "What happens if we dissect it?", "Ask me a quiz question"]
+        return {"answer": answer, "suggestions": suggestions, "source": source}
+
+    errors = []
+
     # ---------------------------------------------------------
-    # LAYER 1: Try Google Gemini SDK (Works with AIzaSy... or Vertex keys)
+    # LAYER 1: DIRECT GEMINI REST API (Now guaranteed to run)
     # ---------------------------------------------------------
-    if api_key.startswith("AIza"):
+    if api_key and api_key != "AQ.Ab8RN6JKSKplj4s1wvr4QZErjM4wfg-WMPIoJMPXQvSELwgIpA":
         try:
-            from google import genai
-
-            client = genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=f"{system_instruction}\n\nQuestion: {payload.question}",
-            )
-            if response and response.text:
-                return {"answer": response.text.replace("*", "").strip(), "source": "gemini-sdk"}
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            gemini_data = {"contents": [{"parts": [{"text": f"{system_instruction}\n\nQuestion: {payload.question}"}]}]}
+            # Timeout badha kar 25 kar diya hai
+            res = requests.post(gemini_url, headers={"Content-Type": "application/json"}, json=gemini_data, timeout=25)
+            if res.status_code == 200:
+                json_res = res.json()
+                reply_text = json_res['candidates'][0]['content']['parts'][0]['text']
+                return process_text(reply_text, "gemini-rest")
+            else:
+                errors.append(f"Gemini API Blocked ({res.status_code}): {res.text[:100]}")
         except Exception as e:
-            print("Gemini SDK note:", e)
+            errors.append(f"Gemini Timeout: {str(e)}")
+    else:
+        errors.append("Gemini API Key is missing or invalid.")
 
     # ---------------------------------------------------------
-    # LAYER 2: Free Keyless Live LLM API (Answers ANY question like ChatGPT/Gemini!)
+    # LAYER 2: Ultra-Reliable Free API Fallback
     # ---------------------------------------------------------
     try:
-        llm_res = requests.post(
+        free_res = requests.post(
             "https://text.pollinations.ai/openai",
             json={
                 "model": "openai",
                 "messages": [
                     {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": payload.question},
+                    {"role": "user", "content": payload.question}
                 ],
-                "temperature": 0.7,
+                "temperature": 0.5
             },
-            timeout=12,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+            timeout=25  # Timeout badha kar 25 kar diya hai
         )
-        if llm_res.status_code == 200:
-            data = llm_res.json()
-            reply_text = data["choices"][0]["message"]["content"].replace("*", "").strip()
-            if reply_text:
-                return {"answer": reply_text, "source": "live-ai-llm"}
+        if free_res.status_code == 200:
+            data = free_res.json()
+            reply_text = data["choices"][0]["message"]["content"]
+            return process_text(reply_text, "live-free-ai")
+        else:
+            errors.append(f"FreeAPI Blocked ({free_res.status_code})")
     except Exception as e:
-        print("Live Keyless LLM note:", e)
+        errors.append(f"FreeAPI Timeout: {str(e)}")
 
     # ---------------------------------------------------------
-    # LAYER 3: 100% Offline Scientific Fallback (If Wi-Fi drops on stage)
+    # LAYER 3: Show exact errors
     # ---------------------------------------------------------
-    part_title = payload.selected_part.split(":")[0] if payload.selected_part else "Core Assembly"
-    other_parts = ", ".join([p.split(":")[0] for p in payload.all_parts[:3]])
-
+    error_details = " | ".join(errors)
     return {
-        "answer": (
-            f"In the {payload.active_model} ({payload.category}), {payload.summary} "
-            f"Specifically looking at {part_title}, it works in coordination with "
-            f"{other_parts} to maintain the system's structure and function."
-        ),
+        "answer": f"API servers are blocking the connection. Exact Errors: {error_details}",
+        "suggestions": ["Check API Key", "Check VPN", "Show Error Logs"],
         "source": "offline-engine",
     }

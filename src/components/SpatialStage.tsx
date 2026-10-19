@@ -91,42 +91,10 @@ const MODEL_SPECS: Record<StemModelId, ModelSpec> = {
     category: "QUANTUM PHYSICS • ATOMIC NUMBER 6",
     summary: "6 Protons, 6 Neutrons in dense femtometer nucleus surrounded by 6 quantized electrons.",
     properties: [
-      {
-        id: "zone-0",
-        code: "P+",
-        name: "Protons (6 Hadron Baryons)",
-        metric: "+1e Charge • 1.672 × 10⁻²⁷ kg",
-        color: "#f43f5e",
-        description: "Positively charged subatomic particles composed of two Up quarks and one Down quark.",
-        focusOffset: [0, 0, 0],
-      },
-      {
-        id: "zone-1",
-        code: "N0",
-        name: "Neutrons (6 Neutral Baryons)",
-        metric: "0 Charge • Strong Nuclear Force",
-        color: "#a855f7",
-        description: "Stabilizes the atomic nucleus by binding protons together against electrostatic repulsion.",
-        focusOffset: [0, 0, 0],
-      },
-      {
-        id: "zone-2",
-        code: "K-SHELL",
-        name: "1s² Inner Orbital Shell",
-        metric: "2 Electrons • -13.6 eV Binding",
-        color: "#38bdf8",
-        description: "Lowest energy quantum shell closest to the nucleus holding 2 paired core electrons.",
-        focusOffset: [0.6, 0.2, 0],
-      },
-      {
-        id: "zone-3",
-        code: "L-SHELL",
-        name: "2s² 2p² Valence Shell",
-        metric: "4 Valence e⁻ • Covalent Bonding",
-        color: "#22d3ee",
-        description: "Outer shell with 4 valence electrons allowing Carbon to form 4 stable covalent bonds.",
-        focusOffset: [-0.8, 0.4, 0],
-      },
+      { id: "zone-0", code: "P+", name: "Protons", metric: "+1e Charge", color: "#f43f5e", description: "Positively charged subatomic particles.", focusOffset: [0, 0, 0] },
+      { id: "zone-1", code: "N0", name: "Neutrons", metric: "0 Charge", color: "#a855f7", description: "Neutral baryons binding the nucleus.", focusOffset: [0, 0, 0] },
+      { id: "zone-2", code: "K-SHELL", name: "Inner Shell", metric: "2 Electrons", color: "#38bdf8", description: "Lowest energy quantum shell.", focusOffset: [0.6, 0.2, 0] },
+      { id: "zone-3", code: "L-SHELL", name: "Valence Shell", metric: "4 Electrons", color: "#22d3ee", description: "Outer shell enabling 4 covalent bonds.", focusOffset: [-0.8, 0.4, 0] },
     ],
   },
   dna: {
@@ -134,42 +102,10 @@ const MODEL_SPECS: Record<StemModelId, ModelSpec> = {
     category: "MOLECULAR BIOLOGY • GENOME ARCHITECTURE",
     summary: "Right-handed double-stranded biopolymer encoding genetic instructions via complementary base pairing.",
     properties: [
-      {
-        id: "zone-0",
-        code: "PO₄",
-        name: "Sugar-Phosphate Backbone",
-        metric: "2.0 nm Diameter • Antiparallel (5'→3')",
-        color: "#a855f7",
-        description: "Deoxyribose sugars linked by phosphodiester bonds form the protective exterior structural rails.",
-        focusOffset: [-0.7, 0.3, 0],
-      },
-      {
-        id: "zone-1",
-        code: "A = T",
-        name: "Adenine — Thymine Base Pair",
-        metric: "2 Hydrogen Bonds • Purine-Pyrimidine",
-        color: "#f43f5e",
-        description: "Bridges the helix interior with a dual hydrogen bond; unzips first during DNA replication.",
-        focusOffset: [0, 0.6, 0],
-      },
-      {
-        id: "zone-2",
-        code: "G ≡ C",
-        name: "Guanine — Cytosine Base Pair",
-        metric: "3 Hydrogen Bonds • High Thermal Stability",
-        color: "#10b981",
-        description: "Triple hydrogen-bonded nucleotide pair providing strong torsional stability to the helix.",
-        focusOffset: [0, -0.5, 0],
-      },
-      {
-        id: "zone-3",
-        code: "HELICASE",
-        name: "Replication Fork Unzipping",
-        metric: "0.34 nm Base Rise • 10.5 bp / Turn",
-        color: "#38bdf8",
-        description: "During cell division, Helicase cleaves the central hydrogen bonds to separate the two strands.",
-        focusOffset: [0.6, -0.8, 0],
-      },
+      { id: "zone-0", code: "PO₄", name: "Backbone", metric: "2.0 nm Dia", color: "#a855f7", description: "Sugar-phosphate rails.", focusOffset: [-0.7, 0.3, 0] },
+      { id: "zone-1", code: "A=T", name: "Adenine-Thymine", metric: "2 H-Bonds", color: "#f43f5e", description: "Dual hydrogen bond base pair.", focusOffset: [0, 0.6, 0] },
+      { id: "zone-2", code: "G≡C", name: "Guanine-Cytosine", metric: "3 H-Bonds", color: "#10b981", description: "Triple hydrogen bond base pair.", focusOffset: [0, -0.5, 0] },
+      { id: "zone-3", code: "HELICASE", name: "Unzipping", metric: "Replication", color: "#38bdf8", description: "Strand separation simulation.", focusOffset: [0.6, -0.8, 0] },
     ],
   },
   earth: {
@@ -177,42 +113,10 @@ const MODEL_SPECS: Record<StemModelId, ModelSpec> = {
     category: "ASTROPHYSICS & GEOPHYSICS • TERRA",
     summary: "2K NASA satellite surface & cloud biosphere with cutaway tectonic mantle, liquid dynamo, and solid inner core.",
     properties: [
-      {
-        id: "zone-0",
-        code: "CRUST",
-        name: "NASA Biosphere & Tectonic Crust",
-        metric: "5 – 70 km Depth • 71% Liquid Hydrosphere",
-        color: "#38bdf8",
-        description: "Continental granite and oceanic basalt plates beneath a nitrogen-oxygen atmosphere and cloud deck.",
-        focusOffset: [-0.75, 0.75, 0],
-      },
-      {
-        id: "zone-1",
-        code: "MANTLE",
-        name: "Silicate Magma Asthenosphere",
-        metric: "2,890 km Thick • 1,000°C to 3,700°C",
-        color: "#ef4444",
-        description: "Comprises 84% of Earth's volume; slow thermal convection currents drive continental drift.",
-        focusOffset: [0, 0, 0],
-      },
-      {
-        id: "zone-2",
-        code: "DYNAMO",
-        name: "Liquid Iron-Nickel Outer Core",
-        metric: "2,260 km Shell • 4,500°C • Geodynamo",
-        color: "#f97316",
-        description: "Convecting liquid metal generates Earth's magnetic field, shielding the biosphere from solar wind.",
-        focusOffset: [0.75, -0.35, 0],
-      },
-      {
-        id: "zone-3",
-        code: "CORE",
-        name: "Solid Crystalline Inner Core",
-        metric: "1,220 km Radius • 5,400°C • 360 GPa",
-        color: "#facc15",
-        description: "Crushing pressure locks superheated iron-nickel crystals into a dense solid sphere.",
-        focusOffset: [1.45, -0.6, 0],
-      },
+      { id: "zone-0", code: "CRUST", name: "Crust", metric: "70km Depth", color: "#38bdf8", description: "Tectonic plates and oceans.", focusOffset: [-0.75, 0.75, 0] },
+      { id: "zone-1", code: "MANTLE", name: "Mantle", metric: "2,890km", color: "#ef4444", description: "Silicate magma layer.", focusOffset: [0, 0, 0] },
+      { id: "zone-2", code: "DYNAMO", name: "Outer Core", metric: "4,500°C", color: "#f97316", description: "Liquid iron-nickel generating magnetic field.", focusOffset: [0.75, -0.35, 0] },
+      { id: "zone-3", code: "CORE", name: "Inner Core", metric: "5,400°C", color: "#facc15", description: "Solid dense crystalline core.", focusOffset: [1.45, -0.6, 0] },
     ],
   },
   custom: {
@@ -223,21 +127,8 @@ const MODEL_SPECS: Record<StemModelId, ModelSpec> = {
   },
 };
 
-interface SlideStat {
-  label: string;
-  value: string;
-}
-
-interface SlideItem {
-  tag: string;
-  title: string;
-  subtitle: string;
-  bullets: string[];
-  stats: SlideStat[];
-  linkedModel?: StemModelId;
-  formula?: string;
-  imageUrl?: string;
-}
+interface SlideStat { label: string; value: string; }
+interface SlideItem { tag: string; title: string; subtitle: string; bullets: string[]; stats: SlideStat[]; linkedModel?: StemModelId; formula?: string; imageUrl?: string; }
 
 const DEFAULT_SLIDES: SlideItem[] = [
   {
@@ -693,11 +584,11 @@ function PhotorealisticEarthModel({
   onSelectPart: (partId: string) => void;
 }) {
   const [colorMap, normalMap, specularMap, cloudsMap, moonMap] = useTexture([
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg",
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg",
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg",
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png",
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg",
+    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_atmos_2048.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_atmos_2048.jpg)",
+    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_normal_2048.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_normal_2048.jpg)",
+    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_specular_2048.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_specular_2048.jpg)",
+    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_clouds_1024.png](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_clouds_1024.png)",
+    "[https://unpkg.com/three@0.160.0/examples/textures/planets/moon_1024.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/moon_1024.jpg)",
   ]);
 
   const upperHemisphereRef = useRef<THREE.Group>(null);
@@ -943,7 +834,7 @@ function UploadedGlbModel({
   onSelectPart: (partId: string) => void;
   onExtractedSpecs: (cards: PropertyCard[]) => void;
 }) {
-  const { scene } = useGLTF(url, "https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
+  const { scene } = useGLTF(url, "[https://www.gstatic.com/draco/versioned/decoders/1.5.7/](https://www.gstatic.com/draco/versioned/decoders/1.5.7/)");
   const { camera } = useThree();
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
 
@@ -1146,10 +1037,8 @@ function GestureControlledStage({ engineState, activeModel, customGlbUrl, manual
   const groupRef = useRef<THREE.Group>(null); 
   const explodeFactor = useRef<number>(0);
   
-  // 🎥 Cinematic Intro Animation Ref
   const introFactor = useRef<number>(0);
 
-  // Jab bhi naya model load ho, intro animation ko 0 par reset karein
   useEffect(() => {
     introFactor.current = 0;
   }, [activeModel, customGlbUrl]);
@@ -1158,12 +1047,10 @@ function GestureControlledStage({ engineState, activeModel, customGlbUrl, manual
     if (!groupRef.current) return; 
     const s = engineState.current;
 
-    // 🚀 Smoothly animate intro from 0 to 1
     introFactor.current = THREE.MathUtils.damp(introFactor.current, 1, 4.5, delta);
     
-    // Scale multiplier aur 360-degree spin calculate karein
     const introScale = introFactor.current;
-    const introSpin = (1 - introFactor.current) * (Math.PI * 2); // 360° Spin
+    const introSpin = (1 - introFactor.current) * (Math.PI * 2);
 
     if (isEmbeddedInSlide) {
       groupRef.current.position.lerp(new THREE.Vector3(1.62, 0.04, 0), delta * 8);
@@ -1215,7 +1102,6 @@ export default function SpatialStage() {
   const rawGlbBlobRef = useRef<Blob | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  // Model Library Modal States
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState("");
 
@@ -1231,7 +1117,6 @@ export default function SpatialStage() {
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [isSavedInBrowser, setIsSavedInBrowser] = useState(false);
 
-  // Teacher Lesson Builder Modal State
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [draftFormula, setDraftFormula] = useState("F = m · a  •  P = W / Δt");
   const [draftStats, setDraftStats] = useState<SlideStat[]>([
@@ -1245,7 +1130,6 @@ export default function SpatialStage() {
     "Make a CLOSED FIST to radially dissect the model and inspect each part!",
   ]);
 
-  // Spatial AI Co-Pilot State
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [aiQuestion, setAiQuestion] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -1259,6 +1143,13 @@ export default function SpatialStage() {
       role: "ai",
       text: "Spatial AI Co-Pilot online. Ask me any question about the active 3D model, internal components, or scientific principles.",
     },
+  ]);
+
+  // 🚀 Dynamic Prompts State
+  const [dynamicPrompts, setDynamicPrompts] = useState<string[]>([
+    "Explain how this works simply",
+    "What happens if we dissect it?",
+    "Ask me a classroom quiz question"
   ]);
 
   const [slides, setSlides] = useState<SlideItem[]>(DEFAULT_SLIDES);
@@ -1311,18 +1202,37 @@ export default function SpatialStage() {
     });
   };
 
+  // 🚀 Natural Voice Engine Update
   const speakTextAloud = (text: string) => {
-    if (!voiceReadoutRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) {
-      return;
-    }
+    if (!voiceReadoutRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text.replace(/\*/g, ""));
-    utter.rate = 1.04;
+    
+    const cleanText = text.replace(/[*#_`]/g, "");
+    const utter = new SpeechSynthesisUtterance(cleanText);
+    
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Premium") || v.name.includes("Natural"));
+    
+    if (cleanText.toLowerCase().includes("hai") || cleanText.toLowerCase().includes("kya") || cleanText.toLowerCase().includes("kaise")) {
+       const hindiVoice = voices.find(v => v.lang.includes("hi-IN") || v.lang.includes("ur-PK"));
+       if (hindiVoice) selectedVoice = hindiVoice;
+    }
+
+    if (selectedVoice) utter.voice = selectedVoice;
+    utter.rate = 1.0; 
+    utter.pitch = 1.02;
+    
     utter.onstart = () => setIsSpeakingNow(true);
     utter.onend = () => setIsSpeakingNow(false);
     utter.onerror = () => setIsSpeakingNow(false);
     window.speechSynthesis.speak(utter);
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+    }
+  }, []);
 
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -1450,7 +1360,6 @@ export default function SpatialStage() {
     setIsBuilderOpen(true);
   };
 
-  // LIBRARY IMPORT FUNCTIONS
   const handleImportCloudModel = (item: CloudGlbAsset) => {
     setIsLibraryOpen(false);
     setDownloadStatus(`Importing "${item.name}"...`);
@@ -1464,7 +1373,6 @@ export default function SpatialStage() {
     setMode("3D");
     setDownloadStatus("");
 
-    // Background mein file fetch kar ke IndexedDB/blob ke liye save karna
     fetch(item.glbUrl)
       .then(r => r.ok ? r.blob() : null)
       .then(b => { if (b) rawGlbBlobRef.current = b; })
@@ -1530,54 +1438,36 @@ export default function SpatialStage() {
     }
   };
 
+  // 🚀 100% Bulletproof API Handler (No JSON Parsing on Frontend)
   const askSpatialAI = async (customPrompt?: string) => {
-    const q = (customPrompt ?? aiQuestion).trim();
-    if (!q || isAiLoading) return;
-
-    stopSpeakingImmediately();
-    setAiQuestion("");
-    setChatHistory((prev) => [...prev, { role: "user", text: q }]);
-    setIsAiLoading(true);
-
-    const contextPayload = {
-      question: q,
-      active_model: currentSpec.title,
-      category: currentSpec.category,
-      summary: currentSpec.summary,
-      selected_part: activePartCard
-        ? `${activePartCard.name} (${activePartCard.metric}): ${activePartCard.description}`
-        : "Full 3D Model Overview",
-      all_parts: currentSpec.properties.map((p) => `${p.name}: ${p.description}`),
-      is_dissected: showProperties,
-    };
-
+    const q = (customPrompt ?? aiQuestion).trim(); if (!q || isAiLoading) return;
+    stopSpeakingImmediately(); setAiQuestion(""); setChatHistory((p) => [...p, { role: "user", text: q }]); setIsAiLoading(true);
+    
     try {
-      const res = await fetch("http://localhost:8000/api/ask-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(contextPayload),
+      const res = await fetch("http://localhost:8000/api/ask-ai", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ question: q, active_model: currentSpec.title, category: currentSpec.category, summary: currentSpec.summary, selected_part: activePartCard ? `${activePartCard.name}: ${activePartCard.description}` : "Full Overview", all_parts: currentSpec.properties.map((p) => `${p.name}: ${p.description}`), is_dissected: isDissecting || manualDissect || Boolean(selectedPartId) }) 
       });
-
+      
       if (!res.ok) throw new Error("Backend offline");
+      
       const data = await res.json();
+      
+      // Backend ab directly perfectly structured data bhej raha hai
       const reply = data.answer;
-
-      setChatHistory((prev) => [...prev, { role: "ai", text: reply }]);
+      setChatHistory((p) => [...p, { role: "ai", text: reply }]); 
       speakTextAloud(reply);
-    } catch {
-      const partContext = activePartCard
-        ? `Currently isolated component is ${activePartCard.name} (${activePartCard.metric}) — ${activePartCard.description}`
-        : `Primary subsystems include ${currentSpec.properties
-          .slice(0, 3)
-          .map((p) => p.name)
-          .join(", ")}.`;
 
-      const fallbackReply = `Analyzing ${currentSpec.title} (${currentSpec.category}): ${currentSpec.summary} ${partContext}`;
-      setChatHistory((prev) => [...prev, { role: "ai", text: fallbackReply }]);
-      speakTextAloud(fallbackReply);
-    } finally {
-      setIsAiLoading(false);
-    }
+      // Dynamic buttons update ho jayenge
+      if (data.suggestions && data.suggestions.length > 0) {
+        setDynamicPrompts(data.suggestions);
+      }
+      
+    } catch {
+      const reply = `Analyzing ${currentSpec.title}. Check internet connection.`;
+      setChatHistory((p) => [...p, { role: "ai", text: reply }]); speakTextAloud(reply);
+    } finally { setIsAiLoading(false); }
   };
 
   const startVoiceMic = () => {
@@ -1681,11 +1571,12 @@ export default function SpatialStage() {
         <Canvas camera={{ position: [0, 0, 5.0], fov: 42 }} className="w-full h-full block">
           <color attach="background" args={["#04020a"]} />
           <Stars radius={50} depth={40} count={1400} factor={3} saturation={0} fade speed={0.6} />
-          <ambientLight intensity={0.85} />
-          <directionalLight position={[6, 6, 6]} intensity={2.2} />
-          <pointLight position={[-5, -3, 3]} intensity={1.6} color="#a855f7" />
-          <pointLight position={[4, -4, -3]} intensity={1.2} color="#38bdf8" />
-          {/* 🌐 PREMIUM SCI-FI HOLODECK GRID */}
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[10, 10, 10]} intensity={3.5} />
+          <directionalLight position={[-10, -10, -10]} intensity={1.5} />
+          <pointLight position={[-5, -3, 3]} intensity={2} color="#a855f7" />
+          <pointLight position={[4, -4, -3]} intensity={1.5} color="#38bdf8" />
+          
           <Grid
             position={[0, -1.8, 0]}
             args={[20, 20]}
@@ -1966,14 +1857,10 @@ export default function SpatialStage() {
               <SparklesIcon className="w-3 h-3 text-cyan-400" />
               <span>Touchless Quick Prompts (Hover 0.6s or Click)</span>
             </div>
+            
+            {/* 🚀 Dynamic Mapped Prompts */}
             <div className="flex flex-col gap-1.5">
-              {[
-                `Explain how ${currentSpec.title} works simply`,
-                activePartCard
-                  ? `What is the function of ${activePartCard.name}?`
-                  : `What happens when we dissect ${currentSpec.title}?`,
-                `Ask me a classroom quiz question on ${currentSpec.title}`,
-              ].map((qChip, idx) => (
+              {dynamicPrompts.map((qChip, idx) => (
                 <button
                   key={idx}
                   data-magnetic="true"
