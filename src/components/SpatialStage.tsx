@@ -10,7 +10,8 @@ import {
   ContactShadows,
   Sparkles,
   Stars,
-  Grid
+  Grid,
+  useAnimations
 } from "@react-three/drei";
 import {
   Bot,
@@ -33,7 +34,8 @@ import {
   User,
   Square,
   Search,
-  Loader2
+  Loader2,
+  ListPlus
 } from "lucide-react";
 import { VERIFIED_CLOUD_MODELS } from "./ModelLibraryModal";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
@@ -129,6 +131,50 @@ const MODEL_SPECS: Record<StemModelId, ModelSpec> = {
 
 interface SlideStat { label: string; value: string; }
 interface SlideItem { tag: string; title: string; subtitle: string; bullets: string[]; stats: SlideStat[]; linkedModel?: StemModelId; formula?: string; imageUrl?: string; }
+
+// 🚀 NAYA INTERFACE AUR DATABASE LOGIC
+interface DockItem {
+  id: string;
+  label: string;
+  isCustom: boolean;
+  isLocalDB?: boolean; // NEW: Yeh batayega ke model DB mein hai
+  url?: string;
+  category?: string;
+  summary?: string;
+}
+
+// 🚀 BROWSER DATABASE LOGIC (Local files ko hamesha save rakhne ke liye)
+const DB_NAME = "SpatialModelsDB";
+const STORE_NAME = "models";
+
+function initDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e: any) => { e.target.result.createObjectStore(STORE_NAME); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveModelToDB(id: string, blob: Blob) {
+  const db = await initDB();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(blob, id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getModelFromDB(id: string): Promise<Blob | null> {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(tx.error);
+  });
+}
 
 const DEFAULT_SLIDES: SlideItem[] = [
   {
@@ -584,11 +630,11 @@ function PhotorealisticEarthModel({
   onSelectPart: (partId: string) => void;
 }) {
   const [colorMap, normalMap, specularMap, cloudsMap, moonMap] = useTexture([
-    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_atmos_2048.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_atmos_2048.jpg)",
-    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_normal_2048.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_normal_2048.jpg)",
-    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_specular_2048.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_specular_2048.jpg)",
-    "[https://unpkg.com/three@0.160.0/examples/textures/planets/earth_clouds_1024.png](https://unpkg.com/three@0.160.0/examples/textures/planets/earth_clouds_1024.png)",
-    "[https://unpkg.com/three@0.160.0/examples/textures/planets/moon_1024.jpg](https://unpkg.com/three@0.160.0/examples/textures/planets/moon_1024.jpg)",
+    "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_atmos_2048.jpg",
+    "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_normal_2048.jpg",
+    "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_specular_2048.jpg",
+    "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_clouds_1024.png",
+    "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/moon_1024.jpg",
   ]);
 
   const upperHemisphereRef = useRef<THREE.Group>(null);
@@ -819,224 +865,128 @@ function extractMeaningfulPartName(mesh: THREE.Mesh, spatialZone: string, index:
   return `${spatialZone} Component #${index + 1}`;
 }
 
-function UploadedGlbModel({
-  url,
-  explodeFactor,
-  engineState,
-  selectedPartId,
-  onSelectPart,
-  onExtractedSpecs,
-}: {
-  url: string;
-  explodeFactor: React.MutableRefObject<number>;
-  engineState: React.MutableRefObject<GestureEngineState>;
-  selectedPartId: string | null;
-  onSelectPart: (partId: string) => void;
-  onExtractedSpecs: (cards: PropertyCard[]) => void;
-}) {
-  const { scene } = useGLTF(url, "[https://www.gstatic.com/draco/versioned/decoders/1.5.7/](https://www.gstatic.com/draco/versioned/decoders/1.5.7/)");
+function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onSelectPart, onExtractedSpecs }: any) {
+  const { scene, animations } = useGLTF(url, "https://www.gstatic.com/draco/versioned/decoders/1.5.7/") as any;
   const { camera } = useThree();
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
 
-  const { wrapperGroup, parts, propertyCards } = useMemo(() => {
-    const cloned = scene.clone(true);
-    cloned.updateMatrixWorld(true);
+  const isAnimated = animations && animations.length > 0;
 
-    const outerBox = new THREE.Box3().setFromObject(cloned);
-    const modelSize = new THREE.Vector3();
-    const modelCenter = new THREE.Vector3();
-    outerBox.getSize(modelSize);
-    outerBox.getCenter(modelCenter);
+  // 🚀 ASLI FIX: Bina Ref ke, aur bina geometry chhere model ko perfectly center aur scale karna
+  const { scale, center, parts, propertyCards, displayScene } = useMemo(() => {
+    try {
+      const box = new THREE.Box3().setFromObject(scene);
+      const sz = new THREE.Vector3(); const c = new THREE.Vector3();
+      box.getSize(sz); box.getCenter(c);
 
-    const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z, 0.001);
-    const normScale = 2.6 / maxDim;
+      let md = Math.max(sz.x, sz.y, sz.z, 0.001);
+      if (isAnimated && md > 15) md = 5; // Sketchfab ki bari haddiyon ko chota karne ka fix
+      const ns = 2.6 / md;
 
-    cloned.position.sub(modelCenter);
+      const xp: any[] = [];
+      let targetScene = scene;
 
-    const container = new THREE.Group();
-    container.scale.setScalar(normScale);
-    container.add(cloned);
-    container.updateMatrixWorld(true);
+      if (!isAnimated) {
+        // Sirf simple models ko clone karo taake wo explode ho sakein
+        targetScene = scene.clone(true);
+        targetScene.traverse((obj: any) => {
+          if (obj.isMesh && !obj.isSkinnedMesh) {
+            const m = obj as THREE.Mesh;
+            const cM = Array.isArray(m.material) ? m.material.map((mat: any) => mat.clone()) : (m.material ? m.material.clone() : new THREE.MeshStandardMaterial({ color: "#a855f7" }));
+            m.material = cM;
+            const b = new THREE.Box3().setFromObject(m); const mc = new THREE.Vector3(); b.getCenter(mc);
+            const pid = `p-${xp.length}`; m.userData.partId = pid;
+            let dW = mc.clone().sub(c);
+            if (dW.length() < 0.02) { const a = xp.length * Math.PI; dW.set(Math.cos(a), 0, Math.sin(a)); }
+            dW.normalize();
 
-    const meshList: THREE.Mesh[] = [];
-    cloned.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        meshList.push(obj as THREE.Mesh);
-      }
-    });
+            const dL = dW.clone();
+            if (m.parent) { const pq = new THREE.Quaternion(); m.parent.getWorldQuaternion(pq); dL.applyQuaternion(pq.invert()); }
+            const em = (md * 0.48) / Math.max(m.parent?.scale.x || 1, 0.001);
 
-    const extractedParts: ExplodablePart[] = [];
-
-    meshList.forEach((mesh, index) => {
-      const clonedMat = Array.isArray(mesh.material)
-        ? mesh.material.map((m) => m.clone())
-        : mesh.material
-          ? mesh.material.clone()
-          : new THREE.MeshStandardMaterial({ color: "#a855f7" });
-      mesh.material = clonedMat;
-
-      const geom = mesh.geometry;
-      const verts = geom?.attributes?.position?.count || 0;
-      const tris = geom?.index ? Math.round(geom.index.count / 3) : Math.round(verts / 3);
-
-      const meshBox = new THREE.Box3().setFromObject(mesh);
-      const meshWorldCenter = new THREE.Vector3();
-      meshBox.getCenter(meshWorldCenter);
-
-      const vertZone =
-        meshWorldCenter.y > 0.25 ? "Upper" : meshWorldCenter.y < -0.25 ? "Lower" : "Central";
-      const depthZone =
-        meshWorldCenter.z > 0.3 ? "Front" : meshWorldCenter.z < -0.3 ? "Rear" : "";
-      const sideZone =
-        meshWorldCenter.x > 0.3 ? "Right" : meshWorldCenter.x < -0.3 ? "Left" : "Core";
-      const spatialZone = `${vertZone} ${depthZone || sideZone}`.trim();
-
-      const semanticName = extractMeaningfulPartName(mesh, spatialZone, index);
-      const partId = `custom-part-${index}`;
-      mesh.userData.partId = partId;
-
-      let dirWorld = meshWorldCenter.clone();
-      if (dirWorld.length() < 0.02) {
-        const angle = (index / Math.max(meshList.length, 1)) * Math.PI * 2;
-        dirWorld.set(Math.cos(angle), ((index % 3) - 1) * 0.45, Math.sin(angle));
-      }
-      dirWorld.normalize();
-
-      const dirLocal = dirWorld.clone();
-      if (mesh.parent) {
-        const parentQuat = new THREE.Quaternion();
-        mesh.parent.getWorldQuaternion(parentQuat);
-        dirLocal.applyQuaternion(parentQuat.invert());
+            xp.push({ id: pid, mesh: m, orig: m.position.clone(), dir: dL.multiplyScalar(em), cM: cM, v: m.geometry?.attributes?.position?.count || 0 });
+          }
+        });
+      } else {
+        // Animated models ke extra safaid (white) glow ko band karo
+        targetScene.traverse((obj: any) => {
+          if (obj.isMesh || obj.isSkinnedMesh) {
+            if (obj.material && obj.material.emissiveIntensity !== undefined) {
+              obj.material.emissiveIntensity = 0;
+            }
+          }
+        });
       }
 
-      const explodeMagnitude = (maxDim * 0.48) / Math.max(mesh.parent?.scale.x || 1, 0.001);
+      const s = [...xp].sort((a, b) => b.v - a.v).slice(0, 6);
+      const pc: PropertyCard[] = isAnimated ? [] : s.map((p, i) => ({
+        id: p.id, code: `PART ${i + 1}`, name: `Component ${i + 1}`, metric: `${p.v} Verts`,
+        color: ["#22d3ee", "#a855f7", "#f43f5e", "#10b981", "#fbbf24"][i % 5], description: `Interactive part.`
+      }));
 
-      extractedParts.push({
-        id: partId,
-        mesh,
-        semanticName,
-        spatialZone,
-        originalLocalPos: mesh.position.clone(),
-        explodeDirLocal: dirLocal.multiplyScalar(explodeMagnitude),
-        worldFocusCenter: [meshWorldCenter.x, meshWorldCenter.y, meshWorldCenter.z],
-        verts,
-        tris,
-        clonedMaterial: clonedMat,
-      });
-    });
+      return { scale: ns, center: c, parts: xp, propertyCards: pc, displayScene: targetScene };
+    } catch (err) {
+      console.error("GLB Error:", err);
+      return { scale: 1, center: new THREE.Vector3(), parts: [], propertyCards: [], displayScene: scene };
+    }
+  }, [scene, isAnimated]);
 
-    const sortedParts = [...extractedParts].sort((a, b) => b.verts - a.verts).slice(0, 6);
-    const palette = ["#22d3ee", "#a855f7", "#f43f5e", "#10b981", "#fbbf24", "#38bdf8"];
-
-    const cards: PropertyCard[] = sortedParts.map((p, idx) => ({
-      id: p.id,
-      code: `PART 0${idx + 1}`,
-      name: p.semanticName,
-      metric: `${p.spatialZone} • ${p.verts.toLocaleString()} Verts`,
-      color: palette[idx % palette.length],
-      description: `Individual sub-mesh component (${p.tris.toLocaleString()} triangles). Hover or pinch to isolate and explain this part!`,
-      focusOffset: p.worldFocusCenter,
-    }));
-
-    return { wrapperGroup: container, parts: extractedParts, propertyCards: cards };
-  }, [scene]);
+  // 🚀 Direct Scene par animation apply ki hai bina kisi crash karne wale "Ref" ke!
+  const { actions, names } = useAnimations(animations, displayScene);
 
   useEffect(() => {
-    onExtractedSpecs(propertyCards);
+    if (isAnimated && names && names.length > 0) {
+      actions[names[0]]?.reset().play();
+    }
+  }, [actions, names, isAnimated]);
+
+  useEffect(() => {
+    if (onExtractedSpecs) onExtractedSpecs(propertyCards);
   }, [propertyCards, onExtractedSpecs]);
 
   useFrame(() => {
-    const exp = explodeFactor.current;
-    const state = engineState.current;
+    if (isAnimated || parts.length === 0) return;
+    const e = explodeFactor.current;
 
-    if (state.justPinched3D) {
-      state.justPinched3D = false;
-      raycaster.setFromCamera(new THREE.Vector2(state.ndcX, state.ndcY), camera);
-      const intersects = raycaster.intersectObjects(
-        parts.map((p) => p.mesh),
-        true
-      );
-
-      let hitPartId: string | null = null;
-      if (intersects.length > 0) {
-        let hitObj: THREE.Object3D | null = intersects[0].object;
-        while (hitObj && !hitObj.userData?.partId && hitObj.parent) {
-          hitObj = hitObj.parent;
-        }
-        hitPartId = hitObj?.userData?.partId || null;
-      }
-
-      if (hitPartId) {
-        onSelectPart(hitPartId);
+    if (engineState.current.justPinched3D) {
+      engineState.current.justPinched3D = false;
+      raycaster.setFromCamera(new THREE.Vector2(engineState.current.ndcX, engineState.current.ndcY), camera);
+      const hits = raycaster.intersectObjects(parts.map((p: any) => p.mesh), true);
+      if (hits.length > 0) {
+        let h: any = hits[0].object; while (h && !h.userData?.partId && h.parent) h = h.parent;
+        if (h?.userData?.partId && onSelectPart) onSelectPart(h.userData.partId);
       }
     }
 
-    if (parts.length > 1) {
-      parts.forEach((part) => {
-        const isSelected = selectedPartId === part.id;
-        const partExplode = selectedPartId ? (isSelected ? 0 : exp * 1.25) : exp;
-
-        part.mesh.position.lerpVectors(
-          part.originalLocalPos,
-          part.originalLocalPos.clone().add(part.explodeDirLocal),
-          partExplode
-        );
-
-        const mats = Array.isArray(part.clonedMaterial) ? part.clonedMaterial : [part.clonedMaterial];
-        mats.forEach((m) => {
-          const std = m as THREE.MeshStandardMaterial;
-          if (selectedPartId) {
-            std.transparent = !isSelected;
-            std.opacity = isSelected ? 1.0 : 0.12;
-            std.depthWrite = isSelected;
-            if (std.emissive) {
-              std.emissive.setHex(isSelected ? 0x06b6d4 : 0x000000);
-              std.emissiveIntensity = isSelected ? 0.6 : 0;
-            }
-          } else {
-            std.transparent = false;
-            std.opacity = 1.0;
-            std.depthWrite = true;
-            if (std.emissive) std.emissiveIntensity = 0;
-          }
-        });
+    parts.forEach((p: any) => {
+      const isS = selectedPartId === p.id;
+      p.mesh.position.lerpVectors(p.orig, p.orig.clone().add(p.dir), selectedPartId ? (isS ? 0 : e * 1.25) : e);
+      const mats = Array.isArray(p.cM) ? p.cM : [p.cM];
+      mats.forEach((m: any) => {
+        if (selectedPartId) { m.transparent = !isS; m.opacity = isS ? 1 : 0.12; m.depthWrite = isS; if (m.emissive) { m.emissive.setHex(isS ? 0x06b6d4 : 0); m.emissiveIntensity = isS ? 0.6 : 0; } }
+        else { m.transparent = false; m.opacity = 1; m.depthWrite = true; if (m.emissive) m.emissiveIntensity = 0; }
       });
-    } else if (parts.length === 1) {
-      const singlePart = parts[0];
-      const mats = Array.isArray(singlePart.clonedMaterial)
-        ? singlePart.clonedMaterial
-        : [singlePart.clonedMaterial];
-      mats.forEach((m) => {
-        const stdMat = m as THREE.MeshStandardMaterial;
-        stdMat.wireframe = exp > 0.35;
-      });
-    }
+    });
   });
 
   return (
-    <primitive
-      object={wrapperGroup}
-      onClick={(e: any) => {
-        e.stopPropagation();
-        let hitObj: THREE.Object3D | null = e.object;
-        while (hitObj && !hitObj.userData?.partId && hitObj.parent) {
-          hitObj = hitObj.parent;
-        }
-        const hitPartId = hitObj?.userData?.partId;
-        if (hitPartId) onSelectPart(hitPartId);
-      }}
-    />
+    // 🚀 Naya safe wrapper jo model ko perfectly center aur scale karta hai
+    <group scale={scale} position={[-center.x * scale, -center.y * scale, -center.z * scale]}>
+      <primitive object={displayScene} onClick={(e: any) => {
+        if (isAnimated) return;
+        e.stopPropagation(); let h: any = e.object; while (h && !h.userData?.partId && h.parent) h = h.parent; if (h?.userData?.partId && onSelectPart) onSelectPart(h.userData.partId);
+      }} />
+    </group>
   );
 }
-
 
 // =========================================================
 // MASTER 3D CONTROLLER WRAPPER
 // =========================================================
 function GestureControlledStage({ engineState, activeModel, customGlbUrl, manualDissect, selectedPartId, isEmbeddedInSlide, onSelectPart, onExtractedCustomSpecs, onGlbError }: any) {
-  const groupRef = useRef<THREE.Group>(null); 
+  const groupRef = useRef<THREE.Group>(null);
   const explodeFactor = useRef<number>(0);
-  
+
   const introFactor = useRef<number>(0);
 
   useEffect(() => {
@@ -1044,11 +994,11 @@ function GestureControlledStage({ engineState, activeModel, customGlbUrl, manual
   }, [activeModel, customGlbUrl]);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return; 
+    if (!groupRef.current) return;
     const s = engineState.current;
 
     introFactor.current = THREE.MathUtils.damp(introFactor.current, 1, 4.5, delta);
-    
+
     const introScale = introFactor.current;
     const introSpin = (1 - introFactor.current) * (Math.PI * 2);
 
@@ -1057,20 +1007,20 @@ function GestureControlledStage({ engineState, activeModel, customGlbUrl, manual
       groupRef.current.scale.setScalar(THREE.MathUtils.damp(groupRef.current.scale.x, 0.72 * introScale, 8, delta));
       s.rotationY += delta * 0.25;
       groupRef.current.rotation.set(
-        THREE.MathUtils.damp(groupRef.current.rotation.x, 0.2, 8, delta), 
-        THREE.MathUtils.damp(groupRef.current.rotation.y, s.rotationY + introSpin, 8, delta), 
+        THREE.MathUtils.damp(groupRef.current.rotation.x, 0.2, 8, delta),
+        THREE.MathUtils.damp(groupRef.current.rotation.y, s.rotationY + introSpin, 8, delta),
         0
       );
     } else {
       groupRef.current.rotation.set(
-        THREE.MathUtils.damp(groupRef.current.rotation.x, s.rotationX, 10, delta), 
-        THREE.MathUtils.damp(groupRef.current.rotation.y, s.rotationY + introSpin, 10, delta), 
+        THREE.MathUtils.damp(groupRef.current.rotation.x, s.rotationX, 10, delta),
+        THREE.MathUtils.damp(groupRef.current.rotation.y, s.rotationY + introSpin, 10, delta),
         0
       );
       groupRef.current.scale.setScalar(THREE.MathUtils.damp(groupRef.current.scale.x, s.scale * introScale, 10, delta));
       groupRef.current.position.lerp(new THREE.Vector3(s.panX, s.panY, 0), delta * 8);
     }
-    
+
     explodeFactor.current = THREE.MathUtils.damp(explodeFactor.current, (s.isFist || manualDissect) ? 1 : 0, 7, delta);
   });
 
@@ -1116,6 +1066,53 @@ export default function SpatialStage() {
   const [customProperties, setCustomProperties] = useState<PropertyCard[]>([]);
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [isSavedInBrowser, setIsSavedInBrowser] = useState(false);
+
+  // 🚀 NEXT.JS SAFE STATE: Database se local files bhi wapas laayega
+  const [dockItems, setDockItems] = useState<DockItem[]>([
+    { id: "atom", label: "Atom", isCustom: false },
+    { id: "dna", label: "DNA Helix", isCustom: false },
+    { id: "earth", label: "NASA Earth", isCustom: false }
+  ]);
+  const [isDockLoaded, setIsDockLoaded] = useState(false);
+
+  // 1. Page load hone par database se models wapas nikalna
+  useEffect(() => {
+    const loadDock = async () => {
+      const savedDock = localStorage.getItem("spatial_dock_items");
+      if (savedDock) {
+        try {
+          let parsed = JSON.parse(savedDock);
+          // Sirf wo models rakho jo cloud se hain ya database mein save hain
+          parsed = parsed.filter((item: any) => !item.url?.startsWith("blob:") || item.isLocalDB);
+
+          // Jo database mein hain, unki original file (blob) wapas nikal kar naya URL banao
+          for (let item of parsed) {
+            if (item.isLocalDB) {
+              const blob = await getModelFromDB(item.id);
+              if (blob) {
+                item.url = URL.createObjectURL(blob);
+              }
+            }
+          }
+          setDockItems(parsed);
+        } catch (e) { }
+      }
+      setIsDockLoaded(true);
+    };
+    loadDock();
+  }, []);
+
+  // 2. Data read hone ke baad hi naye models save karna shuru karo
+  useEffect(() => {
+    if (isDockLoaded) {
+      // Hum sirf details localStorage mein rakhte hain, file (blob) IndexedDB mein!
+      localStorage.setItem("spatial_dock_items", JSON.stringify(dockItems));
+    }
+  }, [dockItems, isDockLoaded]);
+
+  const [importAction, setImportAction] = useState<{
+    isOpen: boolean; name: string; url: string; category: string; summary: string; blob?: Blob; builtInId?: string;
+  }>({ isOpen: false, name: "", url: "", category: "", summary: "" });
 
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [draftFormula, setDraftFormula] = useState("F = m · a  •  P = W / Δt");
@@ -1206,22 +1203,22 @@ export default function SpatialStage() {
   const speakTextAloud = (text: string) => {
     if (!voiceReadoutRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
-    
+
     const cleanText = text.replace(/[*#_`]/g, "");
     const utter = new SpeechSynthesisUtterance(cleanText);
-    
+
     const voices = window.speechSynthesis.getVoices();
     let selectedVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Premium") || v.name.includes("Natural"));
-    
+
     if (cleanText.toLowerCase().includes("hai") || cleanText.toLowerCase().includes("kya") || cleanText.toLowerCase().includes("kaise")) {
-       const hindiVoice = voices.find(v => v.lang.includes("hi-IN") || v.lang.includes("ur-PK"));
-       if (hindiVoice) selectedVoice = hindiVoice;
+      const hindiVoice = voices.find(v => v.lang.includes("hi-IN") || v.lang.includes("ur-PK"));
+      if (hindiVoice) selectedVoice = hindiVoice;
     }
 
     if (selectedVoice) utter.voice = selectedVoice;
-    utter.rate = 1.0; 
+    utter.rate = 1.0;
     utter.pitch = 1.02;
-    
+
     utter.onstart = () => setIsSpeakingNow(true);
     utter.onend = () => setIsSpeakingNow(false);
     utter.onerror = () => setIsSpeakingNow(false);
@@ -1324,10 +1321,16 @@ export default function SpatialStage() {
     if (mode === "2D") {
       setSlideIndex((prev) => (prev - 1 + slides.length) % slides.length);
     } else {
-      setActiveModel((prev) => {
-        const idx = modelOrder.indexOf(prev);
-        return modelOrder[(idx - 1 + modelOrder.length) % modelOrder.length];
-      });
+      const currentIndex = dockItems.findIndex(i => i.isCustom ? (activeModel === "custom" && customGlbUrl === i.url) : activeModel === i.id);
+      const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+      const prevIndex = (safeIndex - 1 + dockItems.length) % dockItems.length;
+      const prevItem = dockItems[prevIndex];
+
+      if (prevItem.isCustom) {
+        setCustomGlbUrl(prevItem.url!); setCustomModelName(prevItem.label); setCustomCategory(prevItem.category!); setCustomSummary(prevItem.summary!); setActiveModel("custom");
+      } else {
+        setActiveModel(prevItem.id as any);
+      }
     }
   };
 
@@ -1336,53 +1339,54 @@ export default function SpatialStage() {
     if (mode === "2D") {
       setSlideIndex((prev) => (prev + 1) % slides.length);
     } else {
-      setActiveModel((prev) => {
-        const idx = modelOrder.indexOf(prev);
-        return modelOrder[(idx + 1) % modelOrder.length];
-      });
+      const currentIndex = dockItems.findIndex(i => i.isCustom ? (activeModel === "custom" && customGlbUrl === i.url) : activeModel === i.id);
+      const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+      const nextIndex = (safeIndex + 1) % dockItems.length;
+      const nextItem = dockItems[nextIndex];
+
+      if (nextItem.isCustom) {
+        setCustomGlbUrl(nextItem.url!); setCustomModelName(nextItem.label); setCustomCategory(nextItem.category!); setCustomSummary(nextItem.summary!); setActiveModel("custom");
+      } else {
+        setActiveModel(nextItem.id as any);
+      }
     }
   };
 
   const showProperties = isDissecting || manualDissect || Boolean(selectedPartId);
 
   const handleGlbUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    rawGlbBlobRef.current = file;
-    const url = URL.createObjectURL(file);
-    const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-
-    resetView();
-    setCustomModelName(cleanTitle);
-    setCustomProperties([]);
-    setCustomGlbUrl(url);
-    setActiveModel("custom");
-    setIsBuilderOpen(true);
+    const f = e.target.files?.[0]; if (!f) return;
+    const url = URL.createObjectURL(f);
+    const name = f.name.replace(/\.[^/.]+$/, "");
+    setImportAction({ isOpen: true, name, url, category: "LOCAL 3D UPLOAD", summary: "Custom local file.", blob: f });
+    e.target.value = '';
   };
 
   const handleImportCloudModel = (item: CloudGlbAsset) => {
     setIsLibraryOpen(false);
-    setDownloadStatus(`Importing "${item.name}"...`);
-    resetView();
-    setCustomModelName(item.name);
-    setCustomCategory(item.category);
-    setCustomSummary(item.description);
-    setCustomProperties([]);
-    setCustomGlbUrl(item.glbUrl);
-    setActiveModel("custom");
-    setMode("3D");
-    setDownloadStatus("");
-
-    fetch(item.glbUrl)
-      .then(r => r.ok ? r.blob() : null)
-      .then(b => { if (b) rawGlbBlobRef.current = b; })
-      .catch(() => { });
+    if (item.builtInModel) {
+      setImportAction({ isOpen: true, name: item.name, url: "", category: item.category, summary: item.description, builtInId: item.builtInModel });
+      return;
+    }
+    setImportAction({ isOpen: true, name: item.name, url: item.glbUrl, category: item.category, summary: item.description });
+    fetch(item.glbUrl).then(r => r.ok ? r.blob() : null).then(b => { if (b) rawGlbBlobRef.current = b; }).catch(() => { });
   };
 
   const handleImportSketchfabModel = async (model: SketchfabSearchResult, token: string) => {
-    setIsLibraryOpen(false);
-    setDownloadStatus("⚠️ API sends ZIP files. Please download .GLB manually from Sketchfab & Upload Locally!");
-    setTimeout(() => setDownloadStatus(""), 5000);
+    setIsLibraryOpen(false); setDownloadStatus(`Fetching ${model.name}...`);
+    if (token.trim()) {
+      try {
+        const r = await fetch(`https://api.sketchfab.com/v3/models/${model.uid}/download`, { headers: { Authorization: `Token ${token}` } });
+        if (r.ok) {
+          const d = await r.json(); if (d?.glb?.url) {
+            setImportAction({ isOpen: true, name: model.name, url: d.glb.url, category: "SKETCHFAB HUB", summary: "Live Sketchfab Model." });
+            setDownloadStatus(""); return;
+          }
+        }
+      } catch { }
+    }
+    const match = VERIFIED_CLOUD_MODELS.find(c => !c.builtInModel && c.keywords.split(" ").some(kw => `${model.name} ${model.description}`.toLowerCase().includes(kw))) || VERIFIED_CLOUD_MODELS[4];
+    handleImportCloudModel({ ...match, name: model.name, description: model.description?.slice(0, 150) || match.description });
   };
 
   const applyPresetTemplate = (preset: (typeof TEACHER_PRESETS)[0]) => {
@@ -1442,28 +1446,28 @@ export default function SpatialStage() {
   const askSpatialAI = async (customPrompt?: string) => {
     const q = (customPrompt ?? aiQuestion).trim(); if (!q || isAiLoading) return;
     stopSpeakingImmediately(); setAiQuestion(""); setChatHistory((p) => [...p, { role: "user", text: q }]); setIsAiLoading(true);
-    
+
     try {
-      const res = await fetch("http://localhost:8000/api/ask-ai", { 
-        method: "POST", 
-        headers: { "Content-Type": "application/json" }, 
-        body: JSON.stringify({ question: q, active_model: currentSpec.title, category: currentSpec.category, summary: currentSpec.summary, selected_part: activePartCard ? `${activePartCard.name}: ${activePartCard.description}` : "Full Overview", all_parts: currentSpec.properties.map((p) => `${p.name}: ${p.description}`), is_dissected: isDissecting || manualDissect || Boolean(selectedPartId) }) 
+      const res = await fetch("http://localhost:8000/api/ask-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, active_model: currentSpec.title, category: currentSpec.category, summary: currentSpec.summary, selected_part: activePartCard ? `${activePartCard.name}: ${activePartCard.description}` : "Full Overview", all_parts: currentSpec.properties.map((p) => `${p.name}: ${p.description}`), is_dissected: isDissecting || manualDissect || Boolean(selectedPartId) })
       });
-      
+
       if (!res.ok) throw new Error("Backend offline");
-      
+
       const data = await res.json();
-      
+
       // Backend ab directly perfectly structured data bhej raha hai
       const reply = data.answer;
-      setChatHistory((p) => [...p, { role: "ai", text: reply }]); 
+      setChatHistory((p) => [...p, { role: "ai", text: reply }]);
       speakTextAloud(reply);
 
       // Dynamic buttons update ho jayenge
       if (data.suggestions && data.suggestions.length > 0) {
         setDynamicPrompts(data.suggestions);
       }
-      
+
     } catch {
       const reply = `Analyzing ${currentSpec.title}. Check internet connection.`;
       setChatHistory((p) => [...p, { role: "ai", text: reply }]); speakTextAloud(reply);
@@ -1561,6 +1565,75 @@ export default function SpatialStage() {
       <input ref={glbInputRef} type="file" accept=".glb,.gltf" onChange={handleGlbUpload} className="hidden" />
       <input ref={slideInputRef} type="file" accept="image/*" multiple onChange={handleSlideUpload} className="hidden" />
 
+      {importAction.isOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 pointer-events-auto">
+          <div className="bg-[#0b0718] border border-cyan-500/40 p-8 rounded-3xl w-full max-w-lg shadow-[0_0_80px_rgba(34,211,238,0.2)] flex flex-col gap-5">
+            <div>
+              <h2 className="text-2xl font-extrabold text-white">Model Successfully Loaded!</h2>
+              <p className="text-sm text-purple-200/70 mt-1">"{importAction.name}" is ready. What would you like to do?</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button data-magnetic="true" onClick={() => {
+                resetView();
+                if (importAction.builtInId) { setActiveModel(importAction.builtInId as StemModelId); }
+                else { setCustomGlbUrl(importAction.url); setCustomModelName(importAction.name); setCustomCategory(importAction.category); setCustomSummary(importAction.summary); setActiveModel("custom"); }
+                setMode("3D"); setImportAction({ ...importAction, isOpen: false });
+              }} className="p-4 bg-white/5 border border-white/10 hover:border-cyan-400 rounded-2xl text-left transition-all hover:bg-cyan-500/10">
+                <div className="font-bold text-cyan-300 flex items-center gap-2"><Search className="w-4 h-4" /> 1. View in 3D Lab Only</div>
+                <div className="text-xs text-white/50 mt-1">Open immediately for touchless inspection without saving.</div>
+              </button>
+
+              <button data-magnetic="true" onClick={async () => {
+                if (!importAction.builtInId) {
+                  const newId = "custom-" + Date.now();
+                  let isLocal = false;
+
+                  // 🚀 Agar file local PC se uthayi gayi hai (blob hai), toh isko permanent database mein daal do!
+                  if (importAction.blob && importAction.url.startsWith("blob:")) {
+                    await saveModelToDB(newId, importAction.blob);
+                    isLocal = true;
+                  }
+
+                  setDockItems(prev => [...prev, {
+                    id: newId, label: importAction.name, isCustom: true,
+                    isLocalDB: isLocal, url: importAction.url,
+                    category: importAction.category, summary: importAction.summary
+                  }]);
+
+                  resetView(); setCustomGlbUrl(importAction.url); setCustomModelName(importAction.name); setCustomCategory(importAction.category); setCustomSummary(importAction.summary); setActiveModel("custom");
+                } else {
+                  if (!dockItems.some(i => i.id === importAction.builtInId)) {
+                    setDockItems(prev => [...prev, { id: importAction.builtInId!, label: importAction.name, isCustom: false }]);
+                  }
+                  resetView(); setActiveModel(importAction.builtInId as StemModelId);
+                }
+                setMode("3D"); setImportAction({ ...importAction, isOpen: false });
+              }} className="p-4 bg-white/5 border border-white/10 hover:border-purple-400 rounded-2xl text-left transition-all hover:bg-purple-500/10">
+                <div className="font-bold text-purple-300 flex items-center gap-2"><ListPlus className="w-4 h-4" /> 2. Add to Showcase (Bottom Dock)</div>
+                <div className="text-xs text-white/50 mt-1">Pin this model to the bottom menu for quick switching during class.</div>
+              </button>
+
+              <button data-magnetic="true" onClick={() => {
+                resetView();
+                if (!importAction.builtInId) {
+                  setCustomGlbUrl(importAction.url); setCustomModelName(importAction.name); setCustomCategory(importAction.category); setCustomSummary(importAction.summary); setActiveModel("custom");
+                  if (importAction.blob) rawGlbBlobRef.current = importAction.blob;
+                } else {
+                  setActiveModel(importAction.builtInId as StemModelId);
+                }
+                setImportAction({ ...importAction, isOpen: false });
+                setIsBuilderOpen(true);
+              }} className="p-4 bg-white/5 border border-white/10 hover:border-emerald-400 rounded-2xl text-left transition-all hover:bg-emerald-500/10">
+                <div className="font-bold text-emerald-300 flex items-center gap-2"><Sliders className="w-4 h-4" /> 3. Create Presentation Slide</div>
+                <div className="text-xs text-white/50 mt-1">Open Lesson Studio to add custom 2D stats and bullet points.</div>
+              </button>
+            </div>
+            <button onClick={() => setImportAction({ ...importAction, isOpen: false })} className="mt-2 text-center text-xs font-mono text-white/40 hover:text-white transition-all">✕ CANCEL</button>
+          </div>
+        </div>
+      )}
+
       {/* ========================================================= */}
       {/* PERSISTENT THREE.JS TOUCHLESS HOLOGRAM CANVAS             */}
       {/* ========================================================= */}
@@ -1576,16 +1649,16 @@ export default function SpatialStage() {
           <directionalLight position={[-10, -10, -10]} intensity={1.5} />
           <pointLight position={[-5, -3, 3]} intensity={2} color="#a855f7" />
           <pointLight position={[4, -4, -3]} intensity={1.5} color="#38bdf8" />
-          
+
           <Grid
             position={[0, -1.8, 0]}
             args={[20, 20]}
             cellSize={0.25}
             cellThickness={1}
-            cellColor="#a855f7" 
+            cellColor="#a855f7"
             sectionSize={1.5}
             sectionThickness={1.5}
-            sectionColor="#22d3ee" 
+            sectionColor="#22d3ee"
             fadeDistance={8}
             fadeStrength={1.5}
           />
@@ -1609,7 +1682,7 @@ export default function SpatialStage() {
               setActiveModel("atom");
             }}
           />
-          
+
           <EffectComposer>
             <Bloom
               luminanceThreshold={0.85}
@@ -1857,7 +1930,7 @@ export default function SpatialStage() {
               <SparklesIcon className="w-3 h-3 text-cyan-400" />
               <span>Touchless Quick Prompts (Hover 0.6s or Click)</span>
             </div>
-            
+
             {/* 🚀 Dynamic Mapped Prompts */}
             <div className="flex flex-col gap-1.5">
               {dynamicPrompts.map((qChip, idx) => (
@@ -2320,41 +2393,37 @@ export default function SpatialStage() {
       {/* ========================================================= */}
       <footer className="absolute bottom-5 left-8 z-30 flex items-center gap-3 pointer-events-auto">
         {mode === "3D" ? (
-          <div className="flex items-center gap-2 bg-[#080514]/90 border border-white/15 p-2 rounded-2xl backdrop-blur-xl shadow-2xl">
-            {(
-              [
-                { id: "atom", label: "Carbon-12 Atom" },
-                { id: "dna", label: "DNA Helix" },
-                { id: "earth", label: "NASA Earth" },
-              ] as const
-            ).map((item) => (
-              <button
-                key={item.id}
-                data-magnetic="true"
-                onClick={() => {
-                  resetView();
-                  setActiveModel(item.id);
-                }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all ${activeModel === item.id
-                  ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-                  : "bg-white/5 text-white/70 hover:bg-white/10"
-                  } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 bg-[#080514]/90 border border-white/15 p-2 rounded-2xl backdrop-blur-xl shadow-2xl max-w-[65vw] overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {dockItems.map((item) => {
+              const isActive = item.isCustom ? (activeModel === "custom" && customGlbUrl === item.url) : (activeModel === item.id);
+              return (
+                <button
+                  key={item.id}
+                  data-magnetic="true"
+                  onClick={() => {
+                    resetView();
+                    if (item.isCustom) {
+                      setCustomGlbUrl(item.url!); setCustomModelName(item.label); setCustomCategory(item.category!); setCustomSummary(item.summary!); setActiveModel("custom");
+                    } else {
+                      setActiveModel(item.id as StemModelId);
+                    }
+                  }}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition-all ${isActive
+                    ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
+                    : "bg-white/5 text-white/70 hover:bg-white/10"
+                    } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
+                >
+                  {item.label.slice(0, 18)}
+                </button>
+              );
+            })}
 
-            {customGlbUrl && (
+            {/* Agar koi model showcase mein nahi hai lekin open hai, usay alag se dikhayein */}
+            {!dockItems.some(i => i.isCustom && i.url === customGlbUrl) && activeModel === "custom" && customGlbUrl && (
               <button
                 data-magnetic="true"
-                onClick={() => {
-                  resetView();
-                  setActiveModel("custom");
-                }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all capitalize ${activeModel === "custom"
-                  ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-                  : "bg-white/5 text-white/70 hover:bg-white/10"
-                  }`}
+                onClick={() => { resetView(); setActiveModel("custom"); }}
+                className="px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all capitalize bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
               >
                 {customModelName.slice(0, 18)}
               </button>
@@ -2362,11 +2431,8 @@ export default function SpatialStage() {
 
             <button
               data-magnetic="true"
-              onClick={() => {
-                setCustomProperties([]);
-                glbInputRef.current?.click();
-              }}
-              className="px-4 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"
+              onClick={() => { glbInputRef.current?.click(); }}
+              className="px-4 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-1.5 shrink-0 transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black ml-2"
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Upload .GLB</span>
