@@ -176,6 +176,16 @@ async function getModelFromDB(id: string): Promise<Blob | null> {
   });
 }
 
+async function deleteModelFromDB(id: string): Promise<void> {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const req = tx.objectStore(STORE_NAME).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(tx.error);
+  });
+}
+
 const DEFAULT_SLIDES: SlideItem[] = [
   {
     tag: "CHAPTER 01 • QUANTUM PHYSICS",
@@ -1138,7 +1148,7 @@ export default function SpatialStage() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     {
       role: "ai",
-      text: "Spatial AI Co-Pilot online. Ask me any question about the active 3D model, internal components, or scientific principles.",
+      text: "HoloSTEM 3D AI online. Ask me any question about the active 3D model, internal components, or scientific principles.",
     },
   ]);
 
@@ -1562,6 +1572,21 @@ export default function SpatialStage() {
       ref={fullscreenContainerRef}
       className="relative w-screen h-screen bg-[#04020a] text-white overflow-hidden select-none fixed inset-0 m-0 p-0"
     >
+
+    {/* 📱 MOBILE SCREEN WARNING OVERLAY (Responsive fix) */}
+      <div className="absolute inset-0 z-[100] bg-[#04020a] flex flex-col items-center justify-center p-8 text-center lg:hidden">
+        <div className="w-16 h-16 rounded-3xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center mb-4 animate-pulse">
+          <Cpu className="w-8 h-8 text-cyan-300" />
+        </div>
+        <h2 className="text-xl font-extrabold text-white">Desktop Experience Required</h2>
+        <p className="text-xs text-purple-200/70 mt-2 max-w-xs leading-relaxed">
+          HoloSTEM 3D AI requires a desktop display, webcam, and browser environment for touchless AI hand gestures and 3D hologram rendering.
+        </p>
+        <div className="mt-6 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-400/30 text-[11px] font-mono text-cyan-300">
+          Please open on a Laptop or PC 💻
+        </div>
+      </div>
+
       <input ref={glbInputRef} type="file" accept=".glb,.gltf" onChange={handleGlbUpload} className="hidden" />
       <input ref={slideInputRef} type="file" accept="image/*" multiple onChange={handleSlideUpload} className="hidden" />
 
@@ -1821,7 +1846,7 @@ export default function SpatialStage() {
       {/* FLOATING HOLOGRAPHIC AI CO-PILOT DOCK                     */}
       {/* ========================================================= */}
       {isAiOpen && (
-        <aside className="absolute top-20 left-8 bottom-20 z-40 w-[440px] rounded-[28px] bg-[#070412]/95 border border-purple-500/50 shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(139,92,246,0.3)] backdrop-blur-2xl flex flex-col justify-between overflow-hidden pointer-events-auto">
+        <aside className="absolute top-20 left-8 bottom-20 z-40 w-[320px] lg:w-[440px] bg-[#070412]/95 border border-purple-500/50 shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(139,92,246,0.3)] backdrop-blur-2xl flex flex-col justify-between overflow-hidden pointer-events-auto">
           <div className="h-1 w-full bg-gradient-to-r from-cyan-400 via-purple-500 to-fuchsia-500" />
 
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-2 bg-white/[0.02]">
@@ -1832,7 +1857,7 @@ export default function SpatialStage() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono font-bold uppercase tracking-wider text-white truncate">
-                    SPATIAL AI CO-PILOT
+                    HoloSTEM 3D AI
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-mono text-emerald-300 shrink-0">
                     LIVE
@@ -2108,7 +2133,7 @@ export default function SpatialStage() {
       {/* INTERACTIVE SCIENTIFIC PROPERTY INSPECTOR DRAWER (3D MODE ONLY) */}
       {mode === "3D" && (
         <aside
-          className={`absolute top-22 right-28 z-30 w-96 max-h-[72vh] overflow-y-auto flex flex-col gap-3 transition-all duration-500 pr-1 ${showProperties
+          className={`absolute top-22 right-28 z-30 w-72 lg:w-96 overflow-y-auto flex flex-col gap-3 transition-all duration-500 pr-1 ${showProperties
             ? "opacity-100 translate-x-0 pointer-events-auto"
             : "opacity-0 translate-x-12 pointer-events-none"
             }`}
@@ -2396,25 +2421,52 @@ export default function SpatialStage() {
           <div className="flex items-center gap-2 bg-[#080514]/90 border border-white/15 p-2 rounded-2xl backdrop-blur-xl shadow-2xl max-w-[65vw] overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {dockItems.map((item) => {
               const isActive = item.isCustom ? (activeModel === "custom" && customGlbUrl === item.url) : (activeModel === item.id);
+              const isDefault = ["atom", "dna", "earth"].includes(item.id);
+
               return (
-                <button
-                  key={item.id}
-                  data-magnetic="true"
-                  onClick={() => {
-                    resetView();
-                    if (item.isCustom) {
-                      setCustomGlbUrl(item.url!); setCustomModelName(item.label); setCustomCategory(item.category!); setCustomSummary(item.summary!); setActiveModel("custom");
-                    } else {
-                      setActiveModel(item.id as StemModelId);
-                    }
-                  }}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition-all ${isActive
-                    ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-                    : "bg-white/5 text-white/70 hover:bg-white/10"
-                    } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
-                >
-                  {item.label.slice(0, 18)}
-                </button>
+                <div key={item.id} className="relative group flex items-center shrink-0">
+                  <button
+                    data-magnetic="true"
+                    onClick={() => {
+                      resetView();
+                      if (item.isCustom) {
+                        setCustomGlbUrl(item.url!); setCustomModelName(item.label); setCustomCategory(item.category!); setCustomSummary(item.summary!); setActiveModel("custom");
+                      } else {
+                        setActiveModel(item.id as StemModelId);
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition-all ${isActive
+                      ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
+                      : "bg-white/5 text-white/70 hover:bg-white/10"
+                      } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
+                  >
+                    {item.label.slice(0, 18)}
+                  </button>
+
+                  {/* 🚀 CROSS BUTTON: Hover karne par naye models par Delete ka option aayega */}
+                  {!isDefault && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        // Agar model local database mein hai toh wahan se storage free karo
+                        if (item.isLocalDB) {
+                          await deleteModelFromDB(item.id);
+                        }
+                        // UI aur dock se model hata do
+                        setDockItems(prev => prev.filter(i => i.id !== item.id));
+                        // Agar wahi model khula hua tha jo delete kiya hai, toh wapas Atom par shift ho jao
+                        if (isActive) {
+                          resetView();
+                          setActiveModel("atom");
+                        }
+                      }}
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
+                      title="Remove from Showcase"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
               );
             })}
 
