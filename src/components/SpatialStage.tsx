@@ -132,18 +132,16 @@ const MODEL_SPECS: Record<StemModelId, ModelSpec> = {
 interface SlideStat { label: string; value: string; }
 interface SlideItem { tag: string; title: string; subtitle: string; bullets: string[]; stats: SlideStat[]; linkedModel?: StemModelId; formula?: string; imageUrl?: string; }
 
-// 🚀 NAYA INTERFACE AUR DATABASE LOGIC
 interface DockItem {
   id: string;
   label: string;
   isCustom: boolean;
-  isLocalDB?: boolean; // NEW: Yeh batayega ke model DB mein hai
+  isLocalDB?: boolean;
   url?: string;
   category?: string;
   summary?: string;
 }
 
-// 🚀 BROWSER DATABASE LOGIC (Local files ko hamesha save rakhne ke liye)
 const DB_NAME = "SpatialModelsDB";
 const STORE_NAME = "models";
 
@@ -315,13 +313,7 @@ const TEACHER_PRESETS = [
 // =========================================================
 // 1. CARBON-12 ATOM
 // =========================================================
-function AtomModel({
-  explodeFactor,
-  selectedPartId,
-}: {
-  explodeFactor: React.MutableRefObject<number>;
-  selectedPartId: string | null;
-}) {
+function AtomModel({ explodeFactor, selectedPartId }: any) {
   const shellKRef = useRef<THREE.Group>(null);
   const shellL1Ref = useRef<THREE.Group>(null);
   const shellL2Ref = useRef<THREE.Group>(null);
@@ -373,22 +365,14 @@ function AtomModel({
     }
   });
 
-  const dimIfOther = (zoneId: string) =>
-    selectedPartId && selectedPartId !== zoneId ? 0.18 : 1.0;
+  const dimIfOther = (zoneId: string) => (selectedPartId && selectedPartId !== zoneId ? 0.18 : 1.0);
 
   return (
     <group>
       <Sparkles count={45} scale={3.6} size={2} speed={0.5} color="#a855f7" />
       <mesh ref={coreGlowRef}>
         <sphereGeometry args={[1, 32, 32]} />
-        <meshPhysicalMaterial
-          color="#ec4899"
-          emissive="#a855f7"
-          emissiveIntensity={0.8}
-          transparent
-          opacity={0.15}
-          roughness={0.1}
-        />
+        <meshPhysicalMaterial color="#ec4899" emissive="#a855f7" emissiveIntensity={0.8} transparent opacity={0.15} roughness={0.1} />
       </mesh>
       <group ref={nucleonsRef}>
         {nucleons.map((n, idx) => {
@@ -396,16 +380,7 @@ function AtomModel({
           return (
             <mesh key={idx} position={n.pos}>
               <sphereGeometry args={[0.17, 32, 32]} />
-              <meshPhysicalMaterial
-                color={n.isProton ? "#f43f5e" : "#8b5cf6"}
-                emissive={n.isProton ? "#e11d48" : "#6d28d9"}
-                emissiveIntensity={selectedPartId === zId ? 1.2 : 0.45}
-                roughness={0.15}
-                metalness={0.3}
-                clearcoat={1}
-                transparent
-                opacity={dimIfOther(zId)}
-              />
+              <meshPhysicalMaterial color={n.isProton ? "#f43f5e" : "#8b5cf6"} emissive={n.isProton ? "#e11d48" : "#6d28d9"} emissiveIntensity={selectedPartId === zId ? 1.2 : 0.45} roughness={0.15} metalness={0.3} clearcoat={1} transparent opacity={dimIfOther(zId)} />
             </mesh>
           );
         })}
@@ -414,24 +389,12 @@ function AtomModel({
         <group ref={shellKRef}>
           <mesh>
             <torusGeometry args={[1.05, 0.015, 24, 120]} />
-            <meshStandardMaterial
-              color="#38bdf8"
-              emissive="#38bdf8"
-              emissiveIntensity={selectedPartId === "zone-2" ? 2.0 : 0.8}
-              transparent
-              opacity={dimIfOther("zone-2")}
-            />
+            <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={selectedPartId === "zone-2" ? 2.0 : 0.8} transparent opacity={dimIfOther("zone-2")} />
           </mesh>
           {[0, Math.PI].map((ang, i) => (
             <mesh key={i} position={[Math.cos(ang) * 1.05, Math.sin(ang) * 1.05, 0]}>
               <sphereGeometry args={[0.085, 24, 24]} />
-              <meshStandardMaterial
-                color="#e0f2fe"
-                emissive="#38bdf8"
-                emissiveIntensity={2}
-                transparent
-                opacity={dimIfOther("zone-2")}
-              />
+              <meshStandardMaterial color="#e0f2fe" emissive="#38bdf8" emissiveIntensity={2} transparent opacity={dimIfOther("zone-2")} />
             </mesh>
           ))}
         </group>
@@ -440,24 +403,12 @@ function AtomModel({
         <group ref={shellL1Ref}>
           <mesh>
             <torusGeometry args={[1.55, 0.015, 24, 120]} />
-            <meshStandardMaterial
-              color="#a855f7"
-              emissive="#a855f7"
-              emissiveIntensity={selectedPartId === "zone-3" ? 2.0 : 0.8}
-              transparent
-              opacity={dimIfOther("zone-3")}
-            />
+            <meshStandardMaterial color="#a855f7" emissive="#a855f7" emissiveIntensity={selectedPartId === "zone-3" ? 2.0 : 0.8} transparent opacity={dimIfOther("zone-3")} />
           </mesh>
           {[0, Math.PI].map((ang, i) => (
             <mesh key={i} position={[Math.cos(ang) * 1.55, Math.sin(ang) * 1.55, 0]}>
               <sphereGeometry args={[0.09, 24, 24]} />
-              <meshStandardMaterial
-                color="#ffffff"
-                emissive="#22d3ee"
-                emissiveIntensity={2}
-                transparent
-                opacity={dimIfOther("zone-3")}
-              />
+              <meshStandardMaterial color="#ffffff" emissive="#22d3ee" emissiveIntensity={2} transparent opacity={dimIfOther("zone-3")} />
             </mesh>
           ))}
         </group>
@@ -466,24 +417,12 @@ function AtomModel({
         <group ref={shellL2Ref}>
           <mesh>
             <torusGeometry args={[1.55, 0.015, 24, 120]} />
-            <meshStandardMaterial
-              color="#22d3ee"
-              emissive="#22d3ee"
-              emissiveIntensity={selectedPartId === "zone-3" ? 2.0 : 0.8}
-              transparent
-              opacity={dimIfOther("zone-3")}
-            />
+            <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={selectedPartId === "zone-3" ? 2.0 : 0.8} transparent opacity={dimIfOther("zone-3")} />
           </mesh>
           {[Math.PI / 2, (3 * Math.PI) / 2].map((ang, i) => (
             <mesh key={i} position={[Math.cos(ang) * 1.55, Math.sin(ang) * 1.55, 0]}>
               <sphereGeometry args={[0.09, 24, 24]} />
-              <meshStandardMaterial
-                color="#ffffff"
-                emissive="#22d3ee"
-                emissiveIntensity={2}
-                transparent
-                opacity={dimIfOther("zone-3")}
-              />
+              <meshStandardMaterial color="#ffffff" emissive="#22d3ee" emissiveIntensity={2} transparent opacity={dimIfOther("zone-3")} />
             </mesh>
           ))}
         </group>
@@ -495,13 +434,7 @@ function AtomModel({
 // =========================================================
 // 2. DNA DOUBLE HELIX
 // =========================================================
-function DnaModel({
-  explodeFactor,
-  selectedPartId,
-}: {
-  explodeFactor: React.MutableRefObject<number>;
-  selectedPartId: string | null;
-}) {
+function DnaModel({ explodeFactor, selectedPartId }: any) {
   const groupRef = useRef<THREE.Group>(null);
   const numPairs = 26;
 
@@ -541,80 +474,37 @@ function DnaModel({
         const twist = i * 0.38;
         const isAT = i % 2 === 0;
         const pairZone = isAT ? "zone-1" : "zone-2";
-        const pairOpacity =
-          selectedPartId && selectedPartId !== pairZone && selectedPartId !== "zone-3" ? 0.2 : 1.0;
+        const pairOpacity = selectedPartId && selectedPartId !== pairZone && selectedPartId !== "zone-3" ? 0.2 : 1.0;
 
         return (
           <group key={i} position={[0, y, 0]} rotation={[0, twist, 0]}>
             <group position={[-0.78, 0, 0]}>
               <mesh>
                 <sphereGeometry args={[0.11, 24, 24]} />
-                <meshPhysicalMaterial
-                  color="#a855f7"
-                  emissive="#7e22ce"
-                  emissiveIntensity={0.35}
-                  roughness={0.15}
-                  metalness={0.4}
-                  clearcoat={1}
-                  transparent
-                  opacity={backboneOpacity}
-                />
+                <meshPhysicalMaterial color="#a855f7" emissive="#7e22ce" emissiveIntensity={0.35} roughness={0.15} metalness={0.4} clearcoat={1} transparent opacity={backboneOpacity} />
               </mesh>
               <mesh position={[0, 0.09, 0.12]} rotation={[0.8, 0, 0]}>
                 <cylinderGeometry args={[0.035, 0.035, 0.28, 12]} />
-                <meshStandardMaterial
-                  color="#c084fc"
-                  metalness={0.5}
-                  roughness={0.2}
-                  transparent
-                  opacity={backboneOpacity}
-                />
+                <meshStandardMaterial color="#c084fc" metalness={0.5} roughness={0.2} transparent opacity={backboneOpacity} />
               </mesh>
             </group>
             <group position={[0.78, 0, 0]}>
               <mesh>
                 <sphereGeometry args={[0.11, 24, 24]} />
-                <meshPhysicalMaterial
-                  color="#38bdf8"
-                  emissive="#0284c7"
-                  emissiveIntensity={0.35}
-                  roughness={0.15}
-                  metalness={0.4}
-                  clearcoat={1}
-                  transparent
-                  opacity={backboneOpacity}
-                />
+                <meshPhysicalMaterial color="#38bdf8" emissive="#0284c7" emissiveIntensity={0.35} roughness={0.15} metalness={0.4} clearcoat={1} transparent opacity={backboneOpacity} />
               </mesh>
               <mesh position={[0, 0.09, -0.12]} rotation={[-0.8, 0, 0]}>
                 <cylinderGeometry args={[0.035, 0.035, 0.28, 12]} />
-                <meshStandardMaterial
-                  color="#7dd3fc"
-                  metalness={0.5}
-                  roughness={0.2}
-                  transparent
-                  opacity={backboneOpacity}
-                />
+                <meshStandardMaterial color="#7dd3fc" metalness={0.5} roughness={0.2} transparent opacity={backboneOpacity} />
               </mesh>
             </group>
             <mesh position={[-0.38, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
               <cylinderGeometry args={[0.045, 0.045, 0.68, 16]} />
-              <meshPhysicalMaterial
-                color={isAT ? "#f43f5e" : "#10b981"}
-                roughness={0.2}
-                clearcoat={0.8}
-                transparent
-                opacity={pairOpacity}
-              />
+              <meshPhysicalMaterial color={isAT ? "#f43f5e" : "#10b981"} roughness={0.2} clearcoat={0.8} transparent opacity={pairOpacity} />
             </mesh>
             <mesh position={[0.38, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
               <cylinderGeometry args={[0.045, 0.045, 0.68, 16]} />
-              <meshPhysicalMaterial
-                color={isAT ? "#fbbf24" : "#38bdf8"}
-                roughness={0.2}
-                clearcoat={0.8}
-                transparent
-                opacity={pairOpacity}
-              />
+              <meshPhysicalMaterial color={isAT ? "#fbbf24" : "#38bdf8"} roughness={0.2} clearcoat={0.8} transparent opacity={pairOpacity} />
             </mesh>
             <mesh rotation={[0, 0, Math.PI / 2]}>
               <cylinderGeometry args={[0.02, 0.02, 0.22, 8]} />
@@ -630,15 +520,7 @@ function DnaModel({
 // =========================================================
 // 3. PHOTOREALISTIC 2K NASA EARTH
 // =========================================================
-function PhotorealisticEarthModel({
-  explodeFactor,
-  selectedPartId,
-  onSelectPart,
-}: {
-  explodeFactor: React.MutableRefObject<number>;
-  selectedPartId: string | null;
-  onSelectPart: (partId: string) => void;
-}) {
+function PhotorealisticEarthModel({ explodeFactor, selectedPartId, onSelectPart }: any) {
   const [colorMap, normalMap, specularMap, cloudsMap, moonMap] = useTexture([
     "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_atmos_2048.jpg",
     "https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_normal_2048.jpg",
@@ -657,7 +539,6 @@ function PhotorealisticEarthModel({
 
   useFrame((_, delta) => {
     const exp = explodeFactor.current;
-
     if (cloudsRef.current) cloudsRef.current.rotation.y += delta * 0.05;
     if (moonOrbitRef.current) moonOrbitRef.current.rotation.y += delta * 0.25;
 
@@ -679,140 +560,46 @@ function PhotorealisticEarthModel({
     }
   });
 
-  const layerOpacity = (partId: string) =>
-    selectedPartId && selectedPartId !== partId ? 0.15 : 1.0;
+  const layerOpacity = (partId: string) => (selectedPartId && selectedPartId !== partId ? 0.15 : 1.0);
 
   return (
     <group>
-      <mesh
-        ref={innerCoreRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelectPart("zone-3");
-        }}
-      >
+      <mesh ref={innerCoreRef} onClick={(e) => { e.stopPropagation(); onSelectPart("zone-3"); }}>
         <sphereGeometry args={[0.45, 64, 64]} />
-        <meshPhysicalMaterial
-          color="#fef08a"
-          emissive="#f59e0b"
-          emissiveIntensity={selectedPartId === "zone-3" ? 2.5 : 1.8}
-          roughness={0.1}
-          metalness={0.7}
-          transparent
-          opacity={layerOpacity("zone-3")}
-        />
+        <meshPhysicalMaterial color="#fef08a" emissive="#f59e0b" emissiveIntensity={selectedPartId === "zone-3" ? 2.5 : 1.8} roughness={0.1} metalness={0.7} transparent opacity={layerOpacity("zone-3")} />
       </mesh>
-      <mesh
-        ref={outerCoreRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelectPart("zone-2");
-        }}
-      >
+      <mesh ref={outerCoreRef} onClick={(e) => { e.stopPropagation(); onSelectPart("zone-2"); }}>
         <sphereGeometry args={[0.82, 64, 64]} />
-        <meshPhysicalMaterial
-          color="#f97316"
-          emissive="#ea580c"
-          emissiveIntensity={selectedPartId === "zone-2" ? 1.4 : 0.75}
-          roughness={0.25}
-          metalness={0.3}
-          clearcoat={0.6}
-          transparent
-          opacity={layerOpacity("zone-2")}
-        />
+        <meshPhysicalMaterial color="#f97316" emissive="#ea580c" emissiveIntensity={selectedPartId === "zone-2" ? 1.4 : 0.75} roughness={0.25} metalness={0.3} clearcoat={0.6} transparent opacity={layerOpacity("zone-2")} />
       </mesh>
-      <mesh
-        ref={mantleRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelectPart("zone-1");
-        }}
-      >
+      <mesh ref={mantleRef} onClick={(e) => { e.stopPropagation(); onSelectPart("zone-1"); }}>
         <sphereGeometry args={[1.18, 64, 64]} />
-        <meshPhysicalMaterial
-          color="#b91c1c"
-          emissive="#dc2626"
-          emissiveIntensity={selectedPartId === "zone-1" ? 1.1 : 0.5}
-          roughness={0.4}
-          clearcoat={0.4}
-          transparent
-          opacity={layerOpacity("zone-1")}
-        />
+        <meshPhysicalMaterial color="#b91c1c" emissive="#dc2626" emissiveIntensity={selectedPartId === "zone-1" ? 1.1 : 0.5} roughness={0.4} clearcoat={0.4} transparent opacity={layerOpacity("zone-1")} />
       </mesh>
-
-      <group
-        ref={upperHemisphereRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelectPart("zone-0");
-        }}
-      >
+      <group ref={upperHemisphereRef} onClick={(e) => { e.stopPropagation(); onSelectPart("zone-0"); }}>
         <mesh>
           <sphereGeometry args={[1.42, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial
-            map={colorMap}
-            normalMap={normalMap}
-            roughnessMap={specularMap}
-            roughness={0.55}
-            metalness={0.1}
-            transparent
-            opacity={layerOpacity("zone-0")}
-          />
+          <meshStandardMaterial map={colorMap} normalMap={normalMap} roughnessMap={specularMap} roughness={0.55} metalness={0.1} transparent opacity={layerOpacity("zone-0")} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry args={[1.18, 1.42, 64]} />
-          <meshStandardMaterial
-            color="#ef4444"
-            emissive="#dc2626"
-            emissiveIntensity={0.4}
-            side={THREE.DoubleSide}
-            transparent
-            opacity={layerOpacity("zone-0")}
-          />
+          <meshStandardMaterial color="#ef4444" emissive="#dc2626" emissiveIntensity={0.4} side={THREE.DoubleSide} transparent opacity={layerOpacity("zone-0")} />
         </mesh>
       </group>
-
-      <group
-        ref={lowerHemisphereRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelectPart("zone-0");
-        }}
-      >
+      <group ref={lowerHemisphereRef} onClick={(e) => { e.stopPropagation(); onSelectPart("zone-0"); }}>
         <mesh>
           <sphereGeometry args={[1.42, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
-          <meshStandardMaterial
-            map={colorMap}
-            normalMap={normalMap}
-            roughnessMap={specularMap}
-            roughness={0.55}
-            metalness={0.1}
-            transparent
-            opacity={layerOpacity("zone-0")}
-          />
+          <meshStandardMaterial map={colorMap} normalMap={normalMap} roughnessMap={specularMap} roughness={0.55} metalness={0.1} transparent opacity={layerOpacity("zone-0")} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry args={[1.18, 1.42, 64]} />
-          <meshStandardMaterial
-            color="#f97316"
-            emissive="#ea580c"
-            emissiveIntensity={0.4}
-            side={THREE.DoubleSide}
-            transparent
-            opacity={layerOpacity("zone-0")}
-          />
+          <meshStandardMaterial color="#f97316" emissive="#ea580c" emissiveIntensity={0.4} side={THREE.DoubleSide} transparent opacity={layerOpacity("zone-0")} />
         </mesh>
         <mesh ref={cloudsRef}>
           <sphereGeometry args={[1.445, 64, 64]} />
-          <meshStandardMaterial
-            map={cloudsMap}
-            transparent
-            opacity={selectedPartId && selectedPartId !== "zone-0" ? 0.05 : 0.42}
-            depthWrite={false}
-          />
+          <meshStandardMaterial map={cloudsMap} transparent opacity={selectedPartId && selectedPartId !== "zone-0" ? 0.05 : 0.42} depthWrite={false} />
         </mesh>
       </group>
-
       <group ref={moonOrbitRef} rotation={[0.25, 0, 0.15]}>
         <mesh position={[2.35, 0, 0]}>
           <sphereGeometry args={[0.22, 32, 32]} />
@@ -830,59 +617,12 @@ function PhotorealisticEarthModel({
 // =========================================================
 // 4. LOCAL UPLOADED .GLB MODEL INSPECTOR & RADIAL DISSECTOR
 // =========================================================
-interface ExplodablePart {
-  id: string;
-  mesh: THREE.Mesh;
-  semanticName: string;
-  spatialZone: string;
-  originalLocalPos: THREE.Vector3;
-  explodeDirLocal: THREE.Vector3;
-  worldFocusCenter: [number, number, number];
-  verts: number;
-  tris: number;
-  clonedMaterial: THREE.Material | THREE.Material[];
-}
-
-function extractMeaningfulPartName(mesh: THREE.Mesh, spatialZone: string, index: number): string {
-  const cleanString = (raw: string) =>
-    raw
-      .replace(/[_.-]+/g, " ")
-      .replace(
-        /\b(mesh|node|object|geo|primitive|shape|id|poly|default|mat|material|sg|shader|group|root|scene)\b/gi,
-        ""
-      )
-      .replace(/\d+/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-  let curr: THREE.Object3D | null = mesh;
-  while (curr) {
-    const candidate = cleanString(curr.name);
-    if (candidate.length >= 3 && /[a-zA-Z]{3,}/.test(candidate)) {
-      return candidate.slice(0, 26);
-    }
-    curr = curr.parent;
-  }
-
-  const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-  if (mat && mat.name) {
-    const candidateMat = cleanString(mat.name);
-    if (candidateMat.length >= 3 && /[a-zA-Z]{3,}/.test(candidateMat)) {
-      return candidateMat.slice(0, 26);
-    }
-  }
-
-  return `${spatialZone} Component #${index + 1}`;
-}
-
 function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onSelectPart, onExtractedSpecs }: any) {
   const { scene, animations } = useGLTF(url, "https://www.gstatic.com/draco/versioned/decoders/1.5.7/") as any;
   const { camera } = useThree();
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
-
   const isAnimated = animations && animations.length > 0;
 
-  // 🚀 ASLI FIX: Bina Ref ke, aur bina geometry chhere model ko perfectly center aur scale karna
   const { scale, center, parts, propertyCards, displayScene } = useMemo(() => {
     try {
       const box = new THREE.Box3().setFromObject(scene);
@@ -890,14 +630,13 @@ function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onS
       box.getSize(sz); box.getCenter(c);
 
       let md = Math.max(sz.x, sz.y, sz.z, 0.001);
-      if (isAnimated && md > 15) md = 5; // Sketchfab ki bari haddiyon ko chota karne ka fix
+      if (isAnimated && md > 15) md = 5;
       const ns = 2.6 / md;
 
       const xp: any[] = [];
       let targetScene = scene;
 
       if (!isAnimated) {
-        // Sirf simple models ko clone karo taake wo explode ho sakein
         targetScene = scene.clone(true);
         targetScene.traverse((obj: any) => {
           if (obj.isMesh && !obj.isSkinnedMesh) {
@@ -918,7 +657,6 @@ function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onS
           }
         });
       } else {
-        // Animated models ke extra safaid (white) glow ko band karo
         targetScene.traverse((obj: any) => {
           if (obj.isMesh || obj.isSkinnedMesh) {
             if (obj.material && obj.material.emissiveIntensity !== undefined) {
@@ -941,7 +679,6 @@ function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onS
     }
   }, [scene, isAnimated]);
 
-  // 🚀 Direct Scene par animation apply ki hai bina kisi crash karne wale "Ref" ke!
   const { actions, names } = useAnimations(animations, displayScene);
 
   useEffect(() => {
@@ -980,7 +717,6 @@ function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onS
   });
 
   return (
-    // 🚀 Naya safe wrapper jo model ko perfectly center aur scale karta hai
     <group scale={scale} position={[-center.x * scale, -center.y * scale, -center.z * scale]}>
       <primitive object={displayScene} onClick={(e: any) => {
         if (isAnimated) return;
@@ -993,10 +729,9 @@ function UploadedGlbModel({ url, explodeFactor, engineState, selectedPartId, onS
 // =========================================================
 // MASTER 3D CONTROLLER WRAPPER
 // =========================================================
-function GestureControlledStage({ engineState, activeModel, customGlbUrl, manualDissect, selectedPartId, isEmbeddedInSlide, onSelectPart, onExtractedCustomSpecs, onGlbError }: any) {
+function GestureControlledStage({ engineState, activeModel, customGlbUrl, manualDissect, selectedPartId, isEmbeddedInSlide, isTrackingPaused, onSelectPart, onExtractedCustomSpecs, onGlbError }: any) {
   const groupRef = useRef<THREE.Group>(null);
   const explodeFactor = useRef<number>(0);
-
   const introFactor = useRef<number>(0);
 
   useEffect(() => {
@@ -1006,9 +741,10 @@ function GestureControlledStage({ engineState, activeModel, customGlbUrl, manual
   useFrame((_, delta) => {
     if (!groupRef.current) return;
     const s = engineState.current;
+    
+    if (isTrackingPaused) return;
 
     introFactor.current = THREE.MathUtils.damp(introFactor.current, 1, 4.5, delta);
-
     const introScale = introFactor.current;
     const introSpin = (1 - introFactor.current) * (Math.PI * 2);
 
@@ -1057,6 +793,10 @@ interface ChatMessage {
 
 export default function SpatialStage() {
   const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+  
+  // 🚀 NAYI LINE: Pause State Yahan Bhi Add Kardi Gayi Hai
+  const [isTrackingPaused, setIsTrackingPaused] = useState(false);
+  
   const glbInputRef = useRef<HTMLInputElement>(null);
   const slideInputRef = useRef<HTMLInputElement>(null);
   const rawGlbBlobRef = useRef<Blob | null>(null);
@@ -1077,7 +817,6 @@ export default function SpatialStage() {
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [isSavedInBrowser, setIsSavedInBrowser] = useState(false);
 
-  // 🚀 NEXT.JS SAFE STATE: Database se local files bhi wapas laayega
   const [dockItems, setDockItems] = useState<DockItem[]>([
     { id: "atom", label: "Atom", isCustom: false },
     { id: "dna", label: "DNA Helix", isCustom: false },
@@ -1085,17 +824,40 @@ export default function SpatialStage() {
   ]);
   const [isDockLoaded, setIsDockLoaded] = useState(false);
 
-  // 1. Page load hone par database se models wapas nikalna
+  const {
+    videoRef,
+    skeletonCanvasRef,
+    cursorDomRef,
+    dwellRingRef,
+    engineState,
+    activeGestureLabel,
+    isDissecting,
+  } = useGestureEngine({
+    smoothing: 0.28,
+  });
+
+  // 🚀 NAYA HACK: Yeh Camera ki video ko freeze kar dega taake Motion Sensing totally stop ho jaye!
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isTrackingPaused) {
+        videoRef.current.pause(); // 🛑 Camera frame freeze!
+        if (cursorDomRef.current) cursorDomRef.current.style.opacity = "0"; // Cursor gayab
+        if (skeletonCanvasRef.current) skeletonCanvasRef.current.style.opacity = "0.15"; // Skeleton dim
+      } else {
+        videoRef.current.play().catch(() => {}); // ▶️ Camera wapas shuru
+        if (cursorDomRef.current) cursorDomRef.current.style.opacity = "1";
+        if (skeletonCanvasRef.current) skeletonCanvasRef.current.style.opacity = "1";
+      }
+    }
+  }, [isTrackingPaused, videoRef, cursorDomRef, skeletonCanvasRef]);
+
   useEffect(() => {
     const loadDock = async () => {
       const savedDock = localStorage.getItem("spatial_dock_items");
       if (savedDock) {
         try {
           let parsed = JSON.parse(savedDock);
-          // Sirf wo models rakho jo cloud se hain ya database mein save hain
           parsed = parsed.filter((item: any) => !item.url?.startsWith("blob:") || item.isLocalDB);
-
-          // Jo database mein hain, unki original file (blob) wapas nikal kar naya URL banao
           for (let item of parsed) {
             if (item.isLocalDB) {
               const blob = await getModelFromDB(item.id);
@@ -1112,10 +874,8 @@ export default function SpatialStage() {
     loadDock();
   }, []);
 
-  // 2. Data read hone ke baad hi naye models save karna shuru karo
   useEffect(() => {
     if (isDockLoaded) {
-      // Hum sirf details localStorage mein rakhte hain, file (blob) IndexedDB mein!
       localStorage.setItem("spatial_dock_items", JSON.stringify(dockItems));
     }
   }, [dockItems, isDockLoaded]);
@@ -1152,7 +912,6 @@ export default function SpatialStage() {
     },
   ]);
 
-  // 🚀 Dynamic Prompts State
   const [dynamicPrompts, setDynamicPrompts] = useState<string[]>([
     "Explain how this works simply",
     "What happens if we dissect it?",
@@ -1167,18 +926,6 @@ export default function SpatialStage() {
   const modelOrder: StemModelId[] = customGlbUrl
     ? ["atom", "dna", "earth", "custom"]
     : ["atom", "dna", "earth"];
-
-  const {
-    videoRef,
-    skeletonCanvasRef,
-    cursorDomRef,
-    dwellRingRef,
-    engineState,
-    activeGestureLabel,
-    isDissecting,
-  } = useGestureEngine({
-    smoothing: 0.28,
-  });
 
   const isValidGlbBinary = async (blob: Blob): Promise<boolean> => {
     if (!blob || blob.size < 20) return false;
@@ -1202,15 +949,12 @@ export default function SpatialStage() {
     setVoiceReadout((prev) => {
       const nextVal = !prev;
       voiceReadoutRef.current = nextVal;
-      if (!nextVal) {
-        stopSpeakingImmediately();
-      }
+      if (!nextVal) stopSpeakingImmediately();
       return nextVal;
     });
   };
 
-  // 🚀 Natural Voice Engine Update
-  const speakTextAloud = (text: string) => {
+const speakTextAloud = (text: string) => {
     if (!voiceReadoutRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
 
@@ -1218,23 +962,33 @@ export default function SpatialStage() {
     const utter = new SpeechSynthesisUtterance(cleanText);
 
     const voices = window.speechSynthesis.getVoices();
-    let selectedVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Premium") || v.name.includes("Natural"));
+    
+    // 🚀 STRICT URDU / HINDI VOICE FIX
+    // 1. Edge ki "Natural" Urdu (ur-PK) ya Hindi (hi-IN)
+    // 2. Google Chrome ki default "Google Urdu" ya "Google हिन्दी"
+    // 3. Koi bhi standard Urdu/Hindi voice
+    let selectedVoice = voices.find(v => v.lang === "ur-PK" && v.name.toLowerCase().includes("natural"))
+                     || voices.find(v => v.lang === "hi-IN" && v.name.toLowerCase().includes("natural"))
+                     || voices.find(v => v.name.includes("Google Urdu"))
+                     || voices.find(v => v.name.includes("Google हिन्दी"))
+                     || voices.find(v => v.lang.includes("ur-PK"))
+                     || voices.find(v => v.lang.includes("hi-IN"));
 
-    if (cleanText.toLowerCase().includes("hai") || cleanText.toLowerCase().includes("kya") || cleanText.toLowerCase().includes("kaise")) {
-      const hindiVoice = voices.find(v => v.lang.includes("hi-IN") || v.lang.includes("ur-PK"));
-      if (hindiVoice) selectedVoice = hindiVoice;
+    if (selectedVoice) {
+      utter.voice = selectedVoice;
     }
-
-    if (selectedVoice) utter.voice = selectedVoice;
-    utter.rate = 1.0;
-    utter.pitch = 1.02;
+    
+    // Urdu clear samajh aane ke liye rate thoda slow hona zaroori hai
+    utter.rate = 0.85; 
+    utter.pitch = 1.0; 
 
     utter.onstart = () => setIsSpeakingNow(true);
     utter.onend = () => setIsSpeakingNow(false);
     utter.onerror = () => setIsSpeakingNow(false);
+    
     window.speechSynthesis.speak(utter);
   };
-
+  
   useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.getVoices();
@@ -1282,18 +1036,11 @@ export default function SpatialStage() {
   }, []);
 
   const currentSlide = slides[slideIndex] || slides[0];
-
-  const displayedModel: StemModelId =
-    mode === "2D" && currentSlide.linkedModel ? currentSlide.linkedModel : activeModel;
+  const displayedModel: StemModelId = mode === "2D" && currentSlide.linkedModel ? currentSlide.linkedModel : activeModel;
 
   const currentSpec: ModelSpec =
     displayedModel === "custom"
-      ? {
-        title: customModelName,
-        category: customCategory,
-        summary: customSummary,
-        properties: customProperties,
-      }
+      ? { title: customModelName, category: customCategory, summary: customSummary, properties: customProperties }
       : MODEL_SPECS[displayedModel];
 
   const activePartCard = currentSpec.properties.find((p) => p.id === selectedPartId) || null;
@@ -1309,14 +1056,9 @@ export default function SpatialStage() {
   };
 
   const focusOnPart = (partId: string) => {
-    if (selectedPartId === partId) {
-      resetView();
-      return;
-    }
-
+    if (selectedPartId === partId) { resetView(); return; }
     setSelectedPartId(partId);
     setManualDissect(true);
-
     const card = currentSpec.properties.find((p) => p.id === partId);
     if (card?.focusOffset) {
       const [fx, fy] = card.focusOffset;
@@ -1335,12 +1077,9 @@ export default function SpatialStage() {
       const safeIndex = currentIndex === -1 ? 0 : currentIndex;
       const prevIndex = (safeIndex - 1 + dockItems.length) % dockItems.length;
       const prevItem = dockItems[prevIndex];
-
       if (prevItem.isCustom) {
         setCustomGlbUrl(prevItem.url!); setCustomModelName(prevItem.label); setCustomCategory(prevItem.category!); setCustomSummary(prevItem.summary!); setActiveModel("custom");
-      } else {
-        setActiveModel(prevItem.id as any);
-      }
+      } else { setActiveModel(prevItem.id as any); }
     }
   };
 
@@ -1353,12 +1092,9 @@ export default function SpatialStage() {
       const safeIndex = currentIndex === -1 ? 0 : currentIndex;
       const nextIndex = (safeIndex + 1) % dockItems.length;
       const nextItem = dockItems[nextIndex];
-
       if (nextItem.isCustom) {
         setCustomGlbUrl(nextItem.url!); setCustomModelName(nextItem.label); setCustomCategory(nextItem.category!); setCustomSummary(nextItem.summary!); setActiveModel("custom");
-      } else {
-        setActiveModel(nextItem.id as any);
-      }
+      } else { setActiveModel(nextItem.id as any); }
     }
   };
 
@@ -1400,166 +1136,110 @@ export default function SpatialStage() {
   };
 
   const applyPresetTemplate = (preset: (typeof TEACHER_PRESETS)[0]) => {
-    setCustomModelName(preset.title);
-    setCustomCategory(preset.category);
-    setCustomSummary(preset.summary);
-    setDraftFormula(preset.formula);
-    setDraftStats(preset.stats);
-    setDraftBullets(preset.bullets);
-
-    setCustomProperties((prev) =>
-      prev.map((card, idx) => {
-        const pInfo = preset.partNames[idx % preset.partNames.length];
-        return {
-          ...card,
-          name: pInfo.name,
-          metric: pInfo.metric,
-          description: pInfo.desc,
-        };
-      })
-    );
+    setCustomModelName(preset.title); setCustomCategory(preset.category); setCustomSummary(preset.summary);
+    setDraftFormula(preset.formula); setDraftStats(preset.stats); setDraftBullets(preset.bullets);
+    setCustomProperties((prev) => prev.map((card, idx) => {
+      const pInfo = preset.partNames[idx % preset.partNames.length];
+      return { ...card, name: pInfo.name, metric: pInfo.metric, description: pInfo.desc };
+    }));
   };
 
   const publishCustomLesson = async () => {
-    const newCustomSlide: SlideItem = {
-      tag: customCategory,
-      title: customModelName,
-      subtitle: customSummary,
-      linkedModel: "custom",
-      formula: draftFormula,
-      stats: draftStats,
-      bullets: draftBullets,
-    };
-
+    const newCustomSlide: SlideItem = { tag: customCategory, title: customModelName, subtitle: customSummary, linkedModel: "custom", formula: draftFormula, stats: draftStats, bullets: draftBullets };
     const updatedSlides = [...slides.filter((s) => s.linkedModel !== "custom"), newCustomSlide];
-    setSlides(updatedSlides);
-    setSlideIndex(updatedSlides.length - 1);
-    setIsBuilderOpen(false);
-    setMode("2D");
-
+    setSlides(updatedSlides); setSlideIndex(updatedSlides.length - 1); setIsBuilderOpen(false); setMode("2D");
     if (rawGlbBlobRef.current) {
-      await saveCustomLessonToDB({
-        glbBlob: rawGlbBlobRef.current,
-        modelName: customModelName,
-        category: customCategory,
-        summary: customSummary,
-        formula: draftFormula,
-        stats: draftStats,
-        bullets: draftBullets,
-        properties: customProperties,
-      });
+      await saveCustomLessonToDB({ glbBlob: rawGlbBlobRef.current, modelName: customModelName, category: customCategory, summary: customSummary, formula: draftFormula, stats: draftStats, bullets: draftBullets, properties: customProperties });
       setIsSavedInBrowser(true);
     }
   };
 
-  // 🚀 100% Bulletproof API Handler (No JSON Parsing on Frontend)
-  const askSpatialAI = async (customPrompt?: string) => {
-    const q = (customPrompt ?? aiQuestion).trim(); if (!q || isAiLoading) return;
-    stopSpeakingImmediately(); setAiQuestion(""); setChatHistory((p) => [...p, { role: "user", text: q }]); setIsAiLoading(true);
+ const askSpatialAI = async (customPrompt?: string) => {
+    const q = (customPrompt ?? aiQuestion).trim(); 
+    if (!q || isAiLoading) return;
+    
+    stopSpeakingImmediately(); 
+    setAiQuestion(""); 
+    setChatHistory((p) => [...p, { role: "user", text: q }]); 
+    setIsAiLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/ask-ai", {
-        method: "POST",
+      // 🚀 SMART URL: Agar laptop par hain toh localhost, warna Render ka live link
+      const isLocal = window.location.hostname === "localhost";
+      const BACKEND_URL = isLocal 
+        ? "http://localhost:8000/api/ask-ai" 
+        : "https://holostem-backend.onrender.com/api/ask-ai"; // Yahan apna asli render link dalein
+
+      const res = await fetch(BACKEND_URL, { 
+        method: "POST", 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, active_model: currentSpec.title, category: currentSpec.category, summary: currentSpec.summary, selected_part: activePartCard ? `${activePartCard.name}: ${activePartCard.description}` : "Full Overview", all_parts: currentSpec.properties.map((p) => `${p.name}: ${p.description}`), is_dissected: isDissecting || manualDissect || Boolean(selectedPartId) })
+        body: JSON.stringify({ 
+          question: q, 
+          active_model: currentSpec.title, 
+          category: currentSpec.category, 
+          summary: currentSpec.summary, 
+          selected_part: activePartCard ? `${activePartCard.name}: ${activePartCard.description}` : "Full Overview", 
+          all_parts: currentSpec.properties.map((p) => `${p.name}: ${p.description}`), 
+          is_dissected: isDissecting || manualDissect || Boolean(selectedPartId) 
+        })
       });
 
       if (!res.ok) throw new Error("Backend offline");
 
       const data = await res.json();
-
-      // Backend ab directly perfectly structured data bhej raha hai
       const reply = data.answer;
-      setChatHistory((p) => [...p, { role: "ai", text: reply }]);
+      setChatHistory((p) => [...p, { role: "ai", text: reply }]); 
       speakTextAloud(reply);
 
-      // Dynamic buttons update ho jayenge
       if (data.suggestions && data.suggestions.length > 0) {
         setDynamicPrompts(data.suggestions);
       }
-
     } catch {
-      const reply = `Analyzing ${currentSpec.title}. Check internet connection.`;
-      setChatHistory((p) => [...p, { role: "ai", text: reply }]); speakTextAloud(reply);
-    } finally { setIsAiLoading(false); }
+      const reply = `Analyzing ${currentSpec.title}. Backend server is currently waking up or offline. Please try again in 30 seconds.`;
+      setChatHistory((p) => [...p, { role: "ai", text: reply }]); 
+      speakTextAloud(reply);
+    } finally { 
+      setIsAiLoading(false); 
+    }
   };
 
   const startVoiceMic = () => {
     if (typeof window === "undefined") return;
     stopSpeakingImmediately();
-    const SpeechRec =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      alert("Voice recognition is supported in Chrome / Edge.");
-      return;
-    }
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) { alert("Voice recognition is supported in Chrome / Edge."); return; }
     const recognition = new SpeechRec();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    setIsListeningMic(true);
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsListeningMic(false);
-      askSpatialAI(transcript);
-    };
+    recognition.lang = "en-US"; recognition.interimResults = false; setIsListeningMic(true);
+    recognition.onresult = (event: any) => { const transcript = event.results[0][0].transcript; setIsListeningMic(false); askSpatialAI(transcript); };
     recognition.onerror = () => setIsListeningMic(false);
     recognition.onend = () => setIsListeningMic(false);
     recognition.start();
   };
 
   const handleSlideUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const uploadedSlides: SlideItem[] = files.map((file, idx) => ({
-      tag: `CUSTOM SLIDE 0${idx + 1}`,
-      title: file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
-      subtitle: "Teacher Uploaded Presentation Visual",
-      bullets: [],
-      stats: [],
-      imageUrl: URL.createObjectURL(file),
-    }));
-
-    setSlides(uploadedSlides);
-    setSlideIndex(0);
-    setMode("2D");
+    const files = Array.from(e.target.files || []); if (files.length === 0) return;
+    const uploadedSlides: SlideItem[] = files.map((file, idx) => ({ tag: `CUSTOM SLIDE 0${idx + 1}`, title: file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "), subtitle: "Teacher Uploaded Presentation Visual", bullets: [], stats: [], imageUrl: URL.createObjectURL(file) }));
+    setSlides(uploadedSlides); setSlideIndex(0); setMode("2D");
   };
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsCinemaMode(Boolean(document.fullscreenElement));
-    };
+    const handleFullscreenChange = () => setIsCinemaMode(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   const toggleFullScreen = async () => {
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        setIsCinemaMode(false);
-        return;
-      }
-      if (fullscreenContainerRef.current) {
-        await fullscreenContainerRef.current.requestFullscreen();
-        setIsCinemaMode(true);
-      }
-    } catch {
-      setIsCinemaMode((prev) => !prev);
-    }
+      if (document.fullscreenElement) { await document.exitFullscreen(); setIsCinemaMode(false); return; }
+      if (fullscreenContainerRef.current) { await fullscreenContainerRef.current.requestFullscreen(); setIsCinemaMode(true); }
+    } catch { setIsCinemaMode((prev) => !prev); }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        isBuilderOpen ||
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
+      if (isBuilderOpen || document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
       if (e.key.toLowerCase() === "f") toggleFullScreen();
+      if (e.key.toLowerCase() === "p") setIsTrackingPaused((prev) => !prev);
       if (e.key === "ArrowRight") handleNext();
       if (e.key === "ArrowLeft") handlePrev();
     };
@@ -1568,12 +1248,7 @@ export default function SpatialStage() {
   });
 
   return (
-    <main
-      ref={fullscreenContainerRef}
-      className="relative w-screen h-screen bg-[#04020a] text-white overflow-hidden select-none fixed inset-0 m-0 p-0"
-    >
-
-    {/* 📱 MOBILE SCREEN WARNING OVERLAY (Responsive fix) */}
+    <main ref={fullscreenContainerRef} className="relative w-screen h-screen bg-[#04020a] text-white overflow-hidden select-none fixed inset-0 m-0 p-0">
       <div className="absolute inset-0 z-[100] bg-[#04020a] flex flex-col items-center justify-center p-8 text-center lg:hidden">
         <div className="w-16 h-16 rounded-3xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center mb-4 animate-pulse">
           <Cpu className="w-8 h-8 text-cyan-300" />
@@ -1597,7 +1272,6 @@ export default function SpatialStage() {
               <h2 className="text-2xl font-extrabold text-white">Model Successfully Loaded!</h2>
               <p className="text-sm text-purple-200/70 mt-1">"{importAction.name}" is ready. What would you like to do?</p>
             </div>
-
             <div className="flex flex-col gap-3">
               <button data-magnetic="true" onClick={() => {
                 resetView();
@@ -1613,24 +1287,14 @@ export default function SpatialStage() {
                 if (!importAction.builtInId) {
                   const newId = "custom-" + Date.now();
                   let isLocal = false;
-
-                  // 🚀 Agar file local PC se uthayi gayi hai (blob hai), toh isko permanent database mein daal do!
                   if (importAction.blob && importAction.url.startsWith("blob:")) {
                     await saveModelToDB(newId, importAction.blob);
                     isLocal = true;
                   }
-
-                  setDockItems(prev => [...prev, {
-                    id: newId, label: importAction.name, isCustom: true,
-                    isLocalDB: isLocal, url: importAction.url,
-                    category: importAction.category, summary: importAction.summary
-                  }]);
-
+                  setDockItems(prev => [...prev, { id: newId, label: importAction.name, isCustom: true, isLocalDB: isLocal, url: importAction.url, category: importAction.category, summary: importAction.summary }]);
                   resetView(); setCustomGlbUrl(importAction.url); setCustomModelName(importAction.name); setCustomCategory(importAction.category); setCustomSummary(importAction.summary); setActiveModel("custom");
                 } else {
-                  if (!dockItems.some(i => i.id === importAction.builtInId)) {
-                    setDockItems(prev => [...prev, { id: importAction.builtInId!, label: importAction.name, isCustom: false }]);
-                  }
+                  if (!dockItems.some(i => i.id === importAction.builtInId)) { setDockItems(prev => [...prev, { id: importAction.builtInId!, label: importAction.name, isCustom: false }]); }
                   resetView(); setActiveModel(importAction.builtInId as StemModelId);
                 }
                 setMode("3D"); setImportAction({ ...importAction, isOpen: false });
@@ -1644,11 +1308,8 @@ export default function SpatialStage() {
                 if (!importAction.builtInId) {
                   setCustomGlbUrl(importAction.url); setCustomModelName(importAction.name); setCustomCategory(importAction.category); setCustomSummary(importAction.summary); setActiveModel("custom");
                   if (importAction.blob) rawGlbBlobRef.current = importAction.blob;
-                } else {
-                  setActiveModel(importAction.builtInId as StemModelId);
-                }
-                setImportAction({ ...importAction, isOpen: false });
-                setIsBuilderOpen(true);
+                } else { setActiveModel(importAction.builtInId as StemModelId); }
+                setImportAction({ ...importAction, isOpen: false }); setIsBuilderOpen(true);
               }} className="p-4 bg-white/5 border border-white/10 hover:border-emerald-400 rounded-2xl text-left transition-all hover:bg-emerald-500/10">
                 <div className="font-bold text-emerald-300 flex items-center gap-2"><Sliders className="w-4 h-4" /> 3. Create Presentation Slide</div>
                 <div className="text-xs text-white/50 mt-1">Open Lesson Studio to add custom 2D stats and bullet points.</div>
@@ -1659,13 +1320,7 @@ export default function SpatialStage() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* PERSISTENT THREE.JS TOUCHLESS HOLOGRAM CANVAS             */}
-      {/* ========================================================= */}
-      <div
-        className={`absolute inset-0 z-10 transition-all duration-500 ${isAiOpen && mode === "2D" ? "opacity-30 blur-[2px]" : "opacity-100"
-          }`}
-      >
+      <div className={`absolute inset-0 z-10 transition-all duration-500 ${isAiOpen && mode === "2D" ? "opacity-30 blur-[2px]" : "opacity-100"}`}>
         <Canvas camera={{ position: [0, 0, 5.0], fov: 42 }} className="w-full h-full block">
           <color attach="background" args={["#04020a"]} />
           <Stars radius={50} depth={40} count={1400} factor={3} saturation={0} fade speed={0.6} />
@@ -1674,24 +1329,11 @@ export default function SpatialStage() {
           <directionalLight position={[-10, -10, -10]} intensity={1.5} />
           <pointLight position={[-5, -3, 3]} intensity={2} color="#a855f7" />
           <pointLight position={[4, -4, -3]} intensity={1.5} color="#38bdf8" />
-
-          <Grid
-            position={[0, -1.8, 0]}
-            args={[20, 20]}
-            cellSize={0.25}
-            cellThickness={1}
-            cellColor="#a855f7"
-            sectionSize={1.5}
-            sectionThickness={1.5}
-            sectionColor="#22d3ee"
-            fadeDistance={8}
-            fadeStrength={1.5}
-          />
-          <Suspense fallback={null}>
-            <Environment preset="city" />
-          </Suspense>
+          <Grid position={[0, -1.8, 0]} args={[20, 20]} cellSize={0.25} cellThickness={1} cellColor="#a855f7" sectionSize={1.5} sectionThickness={1.5} sectionColor="#22d3ee" fadeDistance={8} fadeStrength={1.5} />
+          <Suspense fallback={null}><Environment preset="city" /></Suspense>
 
           <GestureControlledStage
+            isTrackingPaused={isTrackingPaused}
             engineState={engineState}
             activeModel={displayedModel}
             customGlbUrl={customGlbUrl}
@@ -1702,37 +1344,34 @@ export default function SpatialStage() {
             onExtractedCustomSpecs={(extracted: PropertyCard[]) => {
               setCustomProperties((prev) => (prev.length > 0 ? prev : extracted));
             }}
-            onGlbError={() => {
-              setCustomGlbUrl(null);
-              setActiveModel("atom");
-            }}
+            onGlbError={() => { setCustomGlbUrl(null); setActiveModel("atom"); }}
           />
 
           <EffectComposer>
-            <Bloom
-              luminanceThreshold={0.85}
-              mipmapBlur
-              intensity={0.6}
-            />
+            <Bloom luminanceThreshold={0.85} mipmapBlur intensity={0.6} />
           </EffectComposer>
-
         </Canvas>
       </div>
 
-      {/* ========================================================= */}
-      {/* TOP NAVIGATION BAR                                        */}
-      {/* ========================================================= */}
       <header className="absolute top-5 inset-x-8 z-30 flex items-center justify-between pointer-events-auto">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 bg-[#090514]/90 border border-white/15 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg">
+          <button
+            onClick={() => setIsTrackingPaused(!isTrackingPaused)}
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg border transition-all cursor-pointer ${
+              isTrackingPaused 
+                ? "bg-red-500/20 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
+                : "bg-[#090514]/90 border-white/15 hover:border-purple-400"
+            }`}
+          >
             <span
-              className={`h-2.5 w-2.5 rounded-full animate-pulse ${showProperties ? "bg-cyan-400 shadow-[0_0_12px_#22d3ee]" : "bg-purple-400"
-                }`}
+              className={`h-2.5 w-2.5 rounded-full ${
+                isTrackingPaused ? "bg-red-500" : `animate-pulse ${showProperties ? "bg-cyan-400 shadow-[0_0_12px_#22d3ee]" : "bg-purple-400"}`
+              }`}
             />
-            <span className="text-xs font-mono tracking-wider text-purple-200">
-              {activeGestureLabel}
+            <span className={`text-xs font-mono tracking-wider ${isTrackingPaused ? "text-red-300 font-bold" : "text-purple-200"}`}>
+              {isTrackingPaused ? "MOTION PAUSED ⏸️ (Press 'P')" : activeGestureLabel}
             </span>
-          </div>
+          </button>
 
           {isSavedInBrowser && (
             <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 font-mono text-xs backdrop-blur-md">
@@ -1740,115 +1379,53 @@ export default function SpatialStage() {
               <span>LESSON SAVED IN BROWSER</span>
             </div>
           )}
-
           {downloadStatus && (
             <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 font-mono text-xs backdrop-blur-md">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               <span>{downloadStatus}</span>
             </div>
           )}
-
-          <button
-            data-magnetic="true"
-            onClick={() => setIsLibraryOpen(true)}
-            className="px-4 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-400/50 text-cyan-200 text-xs font-mono uppercase font-bold flex items-center gap-2"
-          >
-            <Search className="w-4 h-4" />
-            <span>Search 3D Models</span>
+          <button data-magnetic="true" onClick={() => setIsLibraryOpen(true)} className="px-4 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-400/50 text-cyan-200 text-xs font-mono uppercase font-bold flex items-center gap-2">
+            <Search className="w-4 h-4" /> <span>Search 3D Models</span>
           </button>
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* AI CO-PILOT TRIGGER BUTTON */}
-          <button
-            data-magnetic="true"
-            onClick={() => {
-              setIsAiOpen((prev) => {
-                if (prev) stopSpeakingImmediately();
-                return !prev;
-              });
-            }}
-            className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${isAiOpen
-              ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black border-white shadow-[0_0_30px_rgba(34,211,238,0.6)]"
-              : "bg-[#090514]/90 border-purple-400/50 text-purple-200 hover:border-purple-300"
-              }`}
-          >
-            <SparklesIcon className="w-4 h-4" />
-            <span>{isAiOpen ? "Close AI Co-Pilot" : "AI Co-Pilot"}</span>
+          <button data-magnetic="true" onClick={() => { setIsAiOpen((prev) => { if (prev) stopSpeakingImmediately(); return !prev; }); }} className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${isAiOpen ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black border-white shadow-[0_0_30px_rgba(34,211,238,0.6)]" : "bg-[#090514]/90 border-purple-400/50 text-purple-200 hover:border-purple-300"}`}>
+            <SparklesIcon className="w-4 h-4" /> <span>{isAiOpen ? "Close AI Co-Pilot" : "AI Co-Pilot"}</span>
           </button>
 
           {customGlbUrl && (
-            <button
-              onClick={() => setIsBuilderOpen(true)}
-              className="px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-mono font-semibold hover:bg-amber-400 hover:text-black transition-all flex items-center gap-1.5"
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Configure Lesson</span>
+            <button onClick={() => setIsBuilderOpen(true)} className="px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-mono font-semibold hover:bg-amber-400 hover:text-black transition-all flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5" /> <span>Configure Lesson</span>
             </button>
           )}
 
           {mode === "3D" && (
-            <button
-              data-magnetic="true"
-              onClick={() => {
-                if (showProperties) {
-                  resetView();
-                } else {
-                  setManualDissect(true);
-                }
-              }}
-              className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${showProperties
-                ? "bg-cyan-400 text-black border-cyan-200 shadow-[0_0_25px_rgba(34,211,238,0.6)]"
-                : "bg-[#090514]/90 border-purple-400/40 text-purple-200"
-                }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>{showProperties ? "Close Dissect" : "Dissect Model"}</span>
+            <button data-magnetic="true" onClick={() => { if (showProperties) { resetView(); } else { setManualDissect(true); } }} className={`px-4 py-2.5 rounded-2xl border text-xs font-mono uppercase tracking-wider font-bold transition-all flex items-center gap-2 data-[air-hover=true]:scale-105 ${showProperties ? "bg-cyan-400 text-black border-cyan-200 shadow-[0_0_25px_rgba(34,211,238,0.6)]" : "bg-[#090514]/90 border-purple-400/40 text-purple-200"}`}>
+              <Layers className="w-4 h-4" /> <span>{showProperties ? "Close Dissect" : "Dissect Model"}</span>
             </button>
           )}
 
-          <button
-            data-magnetic="true"
-            onClick={() => {
-              if (mode === "2D" && currentSlide.linkedModel) {
-                setActiveModel(currentSlide.linkedModel);
-              }
-              setMode((m) => (m === "2D" ? "3D" : "2D"));
-            }}
-            className="px-5 py-2.5 rounded-2xl bg-purple-600 border border-purple-400 text-white text-xs font-mono uppercase tracking-wider font-bold shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black data-[air-hover=true]:border-cyan-200 data-[air-hover=true]:scale-105"
-          >
+          <button data-magnetic="true" onClick={() => { if (mode === "2D" && currentSlide.linkedModel) { setActiveModel(currentSlide.linkedModel); } setMode((m) => (m === "2D" ? "3D" : "2D")); }} className="px-5 py-2.5 rounded-2xl bg-purple-600 border border-purple-400 text-white text-xs font-mono uppercase tracking-wider font-bold shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black data-[air-hover=true]:border-cyan-200 data-[air-hover=true]:scale-105">
             {mode === "2D" ? "Expand 3D Lab ↗" : "← Keynote Slides"}
           </button>
 
           {mode === "3D" && (
-            <button
-              data-magnetic="true"
-              onClick={resetView}
-              className="p-2.5 rounded-2xl bg-[#090514]/90 border border-white/15 text-white/80 transition-all data-[air-hover=true]:border-purple-400 data-[air-hover=true]:scale-105"
-              title="Reset 3D View"
-            >
+            <button data-magnetic="true" onClick={resetView} className="p-2.5 rounded-2xl bg-[#090514]/90 border border-white/15 text-white/80 transition-all data-[air-hover=true]:border-purple-400 data-[air-hover=true]:scale-105" title="Reset 3D View">
               <RotateCcw className="w-4 h-4" />
             </button>
           )}
 
-          <button
-            data-magnetic="true"
-            onClick={toggleFullScreen}
-            className="p-2.5 rounded-2xl bg-[#090514]/90 border border-white/15 text-white/80 transition-all data-[air-hover=true]:border-purple-400 data-[air-hover=true]:scale-105"
-            title="Full Screen (F)"
-          >
+          <button data-magnetic="true" onClick={toggleFullScreen} className="p-2.5 rounded-2xl bg-[#090514]/90 border border-white/15 text-white/80 transition-all data-[air-hover=true]:border-purple-400 data-[air-hover=true]:scale-105" title="Full Screen (F)">
             {isCinemaMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </header>
 
-      {/* ========================================================= */}
-      {/* FLOATING HOLOGRAPHIC AI CO-PILOT DOCK                     */}
-      {/* ========================================================= */}
       {isAiOpen && (
         <aside className="absolute top-20 left-8 bottom-20 z-40 w-[320px] lg:w-[440px] bg-[#070412]/95 border border-purple-500/50 shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(139,92,246,0.3)] backdrop-blur-2xl flex flex-col justify-between overflow-hidden pointer-events-auto">
           <div className="h-1 w-full bg-gradient-to-r from-cyan-400 via-purple-500 to-fuchsia-500" />
-
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-2 bg-white/[0.02]">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-purple-600/40 to-cyan-500/30 border border-cyan-400/50 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(34,211,238,0.25)]">
@@ -1856,12 +1433,8 @@ export default function SpatialStage() {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-white truncate">
-                    HoloSTEM 3D AI
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-mono text-emerald-300 shrink-0">
-                    LIVE
-                  </span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-white truncate">HoloSTEM 3D AI</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-mono text-emerald-300 shrink-0">LIVE</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] font-mono text-purple-300/80 mt-0.5">
                   <Cpu className="w-3 h-3 text-cyan-400 shrink-0" />
@@ -1872,72 +1445,31 @@ export default function SpatialStage() {
 
             <div className="flex items-center gap-1.5 shrink-0">
               {isSpeakingNow && (
-                <button
-                  data-magnetic="true"
-                  onClick={stopSpeakingImmediately}
-                  className="px-2.5 py-1.5 rounded-xl bg-rose-500/25 border border-rose-400 text-rose-200 text-[10px] font-mono font-bold flex items-center gap-1 animate-pulse whitespace-nowrap data-[air-hover=true]:bg-rose-500 data-[air-hover=true]:text-white"
-                  title="Stop Speaking"
-                >
-                  <Square className="w-2.5 h-2.5 fill-current" />
-                  <span>Stop</span>
+                <button data-magnetic="true" onClick={stopSpeakingImmediately} className="px-2.5 py-1.5 rounded-xl bg-rose-500/25 border border-rose-400 text-rose-200 text-[10px] font-mono font-bold flex items-center gap-1 animate-pulse whitespace-nowrap data-[air-hover=true]:bg-rose-500 data-[air-hover=true]:text-white" title="Stop Speaking">
+                  <Square className="w-2.5 h-2.5 fill-current" /> <span>Stop</span>
                 </button>
               )}
-
-              <button
-                data-magnetic="true"
-                onClick={toggleVoiceMute}
-                className={`px-3 py-1.5 rounded-xl border text-[11px] font-mono font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all data-[air-hover=true]:scale-105 ${voiceReadout
-                  ? "bg-cyan-500/20 border-cyan-400/50 text-cyan-200"
-                  : "bg-rose-500/20 border-rose-400/40 text-rose-300"
-                  }`}
-              >
+              <button data-magnetic="true" onClick={toggleVoiceMute} className={`px-3 py-1.5 rounded-xl border text-[11px] font-mono font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all data-[air-hover=true]:scale-105 ${voiceReadout ? "bg-cyan-500/20 border-cyan-400/50 text-cyan-200" : "bg-rose-500/20 border-rose-400/40 text-rose-300"}`}>
                 {voiceReadout ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                 <span>{voiceReadout ? "Audio ON" : "Muted"}</span>
               </button>
-
-              <button
-                data-magnetic="true"
-                onClick={() => {
-                  stopSpeakingImmediately();
-                  setIsAiOpen(false);
-                }}
-                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white/60 hover:text-white transition-all"
-              >
+              <button data-magnetic="true" onClick={() => { stopSpeakingImmediately(); setIsAiOpen(false); }} className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white/60 hover:text-white transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div
-            ref={chatScrollRef}
-            className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 scroll-smooth"
-          >
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 scroll-smooth">
             {chatHistory.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                  }`}
-              >
-                <div
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${msg.role === "user"
-                    ? "bg-purple-600/30 border-purple-400/50 text-purple-200"
-                    : "bg-cyan-500/20 border-cyan-400/50 text-cyan-300"
-                    }`}
-                >
+              <div key={i} className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${msg.role === "user" ? "bg-purple-600/30 border-purple-400/50 text-purple-200" : "bg-cyan-500/20 border-cyan-400/50 text-cyan-300"}`}>
                   {msg.role === "user" ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                 </div>
-
-                <div
-                  className={`max-w-[84%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-lg ${msg.role === "user"
-                    ? "bg-gradient-to-br from-purple-600/40 to-indigo-900/50 border border-purple-400/40 text-white rounded-tr-sm"
-                    : "bg-white/[0.05] border border-white/12 text-white/90 rounded-tl-sm"
-                    }`}
-                >
+                <div className={`max-w-[84%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-lg ${msg.role === "user" ? "bg-gradient-to-br from-purple-600/40 to-indigo-900/50 border border-purple-400/40 text-white rounded-tr-sm" : "bg-white/[0.05] border border-white/12 text-white/90 rounded-tl-sm"}`}>
                   {msg.text}
                 </div>
               </div>
             ))}
-
             {isAiLoading && (
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center">
@@ -1955,16 +1487,9 @@ export default function SpatialStage() {
               <SparklesIcon className="w-3 h-3 text-cyan-400" />
               <span>Touchless Quick Prompts (Hover 0.6s or Click)</span>
             </div>
-
-            {/* 🚀 Dynamic Mapped Prompts */}
             <div className="flex flex-col gap-1.5">
               {dynamicPrompts.map((qChip, idx) => (
-                <button
-                  key={idx}
-                  data-magnetic="true"
-                  onClick={() => askSpatialAI(qChip)}
-                  className="w-full text-left px-3.5 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/25 border border-purple-400/25 hover:border-cyan-400/60 text-xs text-purple-100 transition-all truncate data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black data-[air-hover=true]:font-semibold"
-                >
+                <button key={idx} data-magnetic="true" onClick={() => askSpatialAI(qChip)} className="w-full text-left px-3.5 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/25 border border-purple-400/25 hover:border-cyan-400/60 text-xs text-purple-100 transition-all truncate data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black data-[air-hover=true]:font-semibold">
                   {qChip}
                 </button>
               ))}
@@ -1973,33 +1498,11 @@ export default function SpatialStage() {
 
           <div className="p-3.5 bg-[#05030c] border-t border-white/10">
             <div className="flex items-center gap-2 bg-white/[0.05] border border-white/15 focus-within:border-cyan-400/70 rounded-2xl p-1.5 transition-all">
-              <button
-                data-magnetic="true"
-                onClick={startVoiceMic}
-                className={`px-3 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${isListeningMic
-                  ? "bg-rose-500 text-white animate-pulse shadow-[0_0_15px_#f43f5e]"
-                  : "bg-cyan-500/20 hover:bg-cyan-400 hover:text-black text-cyan-200 border border-cyan-400/30 data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"
-                  }`}
-              >
-                <Mic className="w-3.5 h-3.5" />
-                <span>{isListeningMic ? "Listening" : "Voice"}</span>
+              <button data-magnetic="true" onClick={startVoiceMic} className={`px-3 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${isListeningMic ? "bg-rose-500 text-white animate-pulse shadow-[0_0_15px_#f43f5e]" : "bg-cyan-500/20 hover:bg-cyan-400 hover:text-black text-cyan-200 border border-cyan-400/30 data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"}`}>
+                <Mic className="w-3.5 h-3.5" /> <span>{isListeningMic ? "Listening" : "Voice"}</span>
               </button>
-
-              <input
-                type="text"
-                value={aiQuestion}
-                onChange={(e) => setAiQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") askSpatialAI();
-                }}
-                placeholder="Ask a question..."
-                className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white placeholder:text-white/35 focus:outline-none min-w-0"
-              />
-
-              <button
-                onClick={() => askSpatialAI()}
-                className="p-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 text-white shrink-0 transition-all shadow-md"
-              >
+              <input type="text" value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") askSpatialAI(); }} placeholder="Ask a question..." className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white placeholder:text-white/35 focus:outline-none min-w-0" />
+              <button onClick={() => askSpatialAI()} className="p-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 text-white shrink-0 transition-all shadow-md">
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -2007,99 +1510,55 @@ export default function SpatialStage() {
         </aside>
       )}
 
-      {/* ========================================================= */}
-      {/* 2D APPLE-KEYNOTE PRESENTATION OVERLAY                     */}
-      {/* ========================================================= */}
       {mode === "2D" && (
-        <section
-          className={`pointer-events-none absolute inset-x-28 top-20 bottom-24 z-20 flex items-center transition-all duration-500 ${isAiOpen ? "opacity-25 blur-[3px] scale-[0.98]" : "opacity-100 blur-0 scale-100"
-            }`}
-        >
+        <section className={`pointer-events-none absolute inset-x-28 top-20 bottom-24 z-20 flex items-center transition-all duration-500 ${isAiOpen ? "opacity-25 blur-[3px] scale-[0.98]" : "opacity-100 blur-0 scale-100"}`}>
           {currentSlide.imageUrl ? (
             <div className="w-full h-full rounded-[32px] bg-black/85 border border-white/15 p-8 backdrop-blur-2xl flex flex-col justify-between shadow-2xl">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-widest text-purple-300 px-3.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30">
-                  {currentSlide.tag}
-                </span>
-                <span className="text-xs font-mono text-white/50">
-                  SLIDE 0{slideIndex + 1} / 0{slides.length}
-                </span>
+                <span className="text-xs font-mono uppercase tracking-widest text-purple-300 px-3.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30">{currentSlide.tag}</span>
+                <span className="text-xs font-mono text-white/50">SLIDE 0{slideIndex + 1} / 0{slides.length}</span>
               </div>
               <div className="flex-1 my-4 flex items-center justify-center overflow-hidden">
-                <img
-                  src={currentSlide.imageUrl}
-                  alt={currentSlide.title}
-                  className="max-h-full max-w-full object-contain rounded-xl"
-                />
+                <img src={currentSlide.imageUrl} alt={currentSlide.title} className="max-h-full max-w-full object-contain rounded-xl" />
               </div>
-              <div className="text-sm font-mono text-white/60 text-center">
-                HOVER ON LEFT / RIGHT ARROWS FOR 0.6s TO CHANGE SLIDES HANDS-FREE
-              </div>
+              <div className="text-sm font-mono text-white/60 text-center">HOVER ON LEFT / RIGHT ARROWS FOR 0.6s TO CHANGE SLIDES HANDS-FREE</div>
             </div>
           ) : (
             <div className="w-full h-full grid grid-cols-12 items-center rounded-[36px] border border-purple-500/30 bg-gradient-to-r from-[#080514]/95 via-[#080514]/85 to-transparent backdrop-blur-md p-12 shadow-[0_0_90px_rgba(0,0,0,0.85)] relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-white/10">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-400 to-cyan-400 transition-all duration-500"
-                  style={{ width: `${((slideIndex + 1) / slides.length) * 100}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-400 to-cyan-400 transition-all duration-500" style={{ width: `${((slideIndex + 1) / slides.length) * 100}%` }} />
               </div>
-
               <div className="col-span-7 space-y-6 pr-8">
                 <div className="flex items-center gap-3">
-                  <span className="px-4 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 text-purple-200 font-mono text-xs tracking-widest uppercase">
-                    {currentSlide.tag}
-                  </span>
-                  {currentSlide.formula && (
-                    <span className="px-4 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-200 font-mono text-xs">
-                      {currentSlide.formula}
-                    </span>
-                  )}
+                  <span className="px-4 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 text-purple-200 font-mono text-xs tracking-widest uppercase">{currentSlide.tag}</span>
+                  {currentSlide.formula && (<span className="px-4 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-200 font-mono text-xs">{currentSlide.formula}</span>)}
                 </div>
-
                 <div>
-                  <h1 className="text-5xl font-extrabold tracking-tight text-white leading-[1.12] capitalize">
-                    {currentSlide.title}
-                  </h1>
-                  <p className="text-lg text-purple-200/75 mt-3 leading-relaxed">
-                    {currentSlide.subtitle}
-                  </p>
+                  <h1 className="text-5xl font-extrabold tracking-tight text-white leading-[1.12] capitalize">{currentSlide.title}</h1>
+                  <p className="text-lg text-purple-200/75 mt-3 leading-relaxed">{currentSlide.subtitle}</p>
                 </div>
-
                 <div className="grid grid-cols-3 gap-4 pt-1">
                   {currentSlide.stats.map((st, idx) => (
-                    <div
-                      key={idx}
-                      className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md"
-                    >
-                      <div className="text-[11px] font-mono uppercase tracking-widest text-purple-300/70">
-                        {st.label}
-                      </div>
-                      <div className="text-2xl font-extrabold font-mono text-cyan-300 mt-1">
-                        {st.value}
-                      </div>
+                    <div key={idx} className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md">
+                      <div className="text-[11px] font-mono uppercase tracking-widest text-purple-300/70">{st.label}</div>
+                      <div className="text-2xl font-extrabold font-mono text-cyan-300 mt-1">{st.value}</div>
                     </div>
                   ))}
                 </div>
-
                 <div className="space-y-3.5 pt-2">
                   {currentSlide.bullets.map((b, i) => (
                     <div key={i} className="flex items-start gap-4">
-                      <span className="w-6 h-6 rounded-xl bg-purple-500/25 border border-purple-400/60 text-purple-200 font-mono text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                        0{i + 1}
-                      </span>
+                      <span className="w-6 h-6 rounded-xl bg-purple-500/25 border border-purple-400/60 text-purple-200 font-mono text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">0{i + 1}</span>
                       <p className="text-base text-white/90 leading-relaxed">{b}</p>
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className="col-span-5 h-full flex flex-col justify-between items-end pointer-events-none">
                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/75 border border-cyan-400/40 text-cyan-300 font-mono text-xs backdrop-blur-md">
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
                   <span>LIVE 3D HOLOGRAM • SLIDE 0{slideIndex + 1} / 0{slides.length}</span>
                 </div>
-
                 <div className="px-5 py-2.5 rounded-2xl bg-black/80 border border-white/15 text-xs font-mono text-white/80 backdrop-blur-md">
                   Make a <span className="text-cyan-300 font-bold">CLOSED FIST</span> to dissect 3D model live on slide
                 </div>
@@ -2109,80 +1568,42 @@ export default function SpatialStage() {
         </section>
       )}
 
-      {/* TOP-LEFT MODEL HEADER CARD (3D MODE ONLY) */}
       {mode === "3D" && !isAiOpen && (
         <div className="pointer-events-none absolute top-22 left-8 z-20 max-w-md bg-[#080514]/85 border border-white/15 p-6 rounded-[28px] backdrop-blur-xl shadow-2xl">
-          <div className="text-xs font-mono tracking-widest text-cyan-400 uppercase">
-            {currentSpec.category}
-          </div>
+          <div className="text-xs font-mono tracking-widest text-cyan-400 uppercase">{currentSpec.category}</div>
           <h2 className="text-2xl font-extrabold mt-1 text-white capitalize">{currentSpec.title}</h2>
           <p className="text-xs text-white/70 mt-1.5 leading-relaxed">{currentSpec.summary}</p>
           <div className="mt-4 flex flex-col gap-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-purple-500/15 border border-purple-400/30 text-xs font-mono text-purple-200">
-              <Layers className="w-3.5 h-3.5 text-purple-400" />
-              <span>CLOSED FIST = Radial 3D Dissection</span>
+              <Layers className="w-3.5 h-3.5 text-purple-400" /> <span>CLOSED FIST = Radial 3D Dissection</span>
             </div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-cyan-500/15 border border-cyan-400/30 text-xs font-mono text-cyan-200">
-              <SparklesIcon className="w-3.5 h-3.5 text-cyan-400" />
-              <span>2-HAND PINCH = Zoom In/Out & Move Position</span>
+              <SparklesIcon className="w-3.5 h-3.5 text-cyan-400" /> <span>2-HAND PINCH = Zoom In/Out & Move Position</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* INTERACTIVE SCIENTIFIC PROPERTY INSPECTOR DRAWER (3D MODE ONLY) */}
       {mode === "3D" && (
-        <aside
-          className={`absolute top-22 right-28 z-30 w-72 lg:w-96 overflow-y-auto flex flex-col gap-3 transition-all duration-500 pr-1 ${showProperties
-            ? "opacity-100 translate-x-0 pointer-events-auto"
-            : "opacity-0 translate-x-12 pointer-events-none"
-            }`}
-        >
+        <aside className={`absolute top-22 right-28 z-30 w-72 lg:w-96 overflow-y-auto flex flex-col gap-3 transition-all duration-500 pr-1 ${showProperties ? "opacity-100 translate-x-0 pointer-events-auto" : "opacity-0 translate-x-12 pointer-events-none"}`}>
           <div className="bg-[#080514]/90 border border-cyan-400/40 px-4 py-2.5 rounded-2xl backdrop-blur-xl flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-widest text-cyan-300">
-              Component Telemetry
-            </span>
+            <span className="text-xs font-mono uppercase tracking-widest text-cyan-300">Component Telemetry</span>
             {selectedPartId ? (
-              <button
-                data-magnetic="true"
-                onClick={() => resetView()}
-                className="text-xs font-mono bg-cyan-400 text-black px-3 py-0.5 rounded-full font-bold"
-              >
-                Show All Parts
-              </button>
+              <button data-magnetic="true" onClick={() => resetView()} className="text-xs font-mono bg-cyan-400 text-black px-3 py-0.5 rounded-full font-bold">Show All Parts</button>
             ) : (
-              <span className="text-xs font-mono text-cyan-200 font-bold">
-                {currentSpec.properties.length} NODES
-              </span>
+              <span className="text-xs font-mono text-cyan-200 font-bold">{currentSpec.properties.length} NODES</span>
             )}
           </div>
-
           {currentSpec.properties.map((prop) => {
             const isSelected = selectedPartId === prop.id;
-
             return (
-              <div
-                key={prop.id}
-                role="button"
-                data-magnetic="true"
-                onClick={() => focusOnPart(prop.id)}
-                className={`cursor-pointer text-left transition-all p-4 rounded-2xl backdrop-blur-xl shadow-2xl border ${isSelected
-                  ? "bg-cyan-950/90 border-cyan-400 scale-[1.02] shadow-[0_0_25px_rgba(34,211,238,0.45)]"
-                  : "bg-[#080514]/85 border-white/15 hover:border-purple-400/60"
-                  } data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-[1.02]`}
-              >
+              <div key={prop.id} role="button" data-magnetic="true" onClick={() => focusOnPart(prop.id)} className={`cursor-pointer text-left transition-all p-4 rounded-2xl backdrop-blur-xl shadow-2xl border ${isSelected ? "bg-cyan-950/90 border-cyan-400 scale-[1.02] shadow-[0_0_25px_rgba(34,211,238,0.45)]" : "bg-[#080514]/85 border-white/15 hover:border-purple-400/60"} data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-[1.02]`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold text-black"
-                      style={{ backgroundColor: prop.color }}
-                    >
-                      {isSelected ? "ISOLATED" : prop.code}
-                    </span>
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold text-black" style={{ backgroundColor: prop.color }}>{isSelected ? "ISOLATED" : prop.code}</span>
                     <h3 className="font-semibold text-sm text-white">{prop.name}</h3>
                   </div>
                 </div>
-
                 <div className="text-xs font-mono text-purple-300 mt-1.5">{prop.metric}</div>
                 <p className="text-xs text-white/70 mt-1 leading-relaxed">{prop.description}</p>
               </div>
@@ -2191,394 +1612,143 @@ export default function SpatialStage() {
         </aside>
       )}
 
-      {/* ========================================================= */}
-      {/* TEACHER LESSON BUILDER STUDIO MODAL                       */}
-      {/* ========================================================= */}
       {isBuilderOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 pointer-events-auto">
           <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0b0718] border border-purple-500/40 shadow-[0_0_80px_rgba(168,85,247,0.3)] p-8 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <span className="text-xs font-mono uppercase tracking-widest text-cyan-400">
-                  TEACHER 3D LESSON CREATOR STUDIO (AUTO-SAVES TO BROWSER)
-                </span>
-                <h2 className="text-2xl font-bold text-white mt-0.5">
-                  Configure Custom 3D Model & Slide Details
-                </h2>
+                <span className="text-xs font-mono uppercase tracking-widest text-cyan-400">TEACHER 3D LESSON CREATOR STUDIO (AUTO-SAVES TO BROWSER)</span>
+                <h2 className="text-2xl font-bold text-white mt-0.5">Configure Custom 3D Model & Slide Details</h2>
               </div>
               <div className="flex items-center gap-2">
-                {isSavedInBrowser && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await clearCustomLessonFromDB();
-                      setIsSavedInBrowser(false);
-                    }}
-                    className="px-3 py-2 rounded-xl bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs font-mono"
-                  >
-                    Clear Saved Storage
-                  </button>
-                )}
-                <button
-                  onClick={() => setIsBuilderOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono"
-                >
-                  ✕ Close
-                </button>
+                {isSavedInBrowser && (<button type="button" onClick={async () => { await clearCustomLessonFromDB(); setIsSavedInBrowser(false); }} className="px-3 py-2 rounded-xl bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs font-mono">Clear Saved Storage</button>)}
+                <button onClick={() => setIsBuilderOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono">✕ Close</button>
               </div>
             </div>
-
             <div className="space-y-2">
-              <label className="text-xs font-mono uppercase tracking-wider text-purple-300">
-                Quick-Fill STEM Template (1-Click Setup):
-              </label>
+              <label className="text-xs font-mono uppercase tracking-wider text-purple-300">Quick-Fill STEM Template (1-Click Setup):</label>
               <div className="flex flex-wrap gap-2.5">
                 {TEACHER_PRESETS.map((preset, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => applyPresetTemplate(preset)}
-                    className="px-4 py-2 rounded-xl bg-purple-600/25 border border-purple-400/40 hover:bg-purple-600 text-xs font-medium transition-all"
-                  >
-                    {preset.label}
-                  </button>
+                  <button key={i} type="button" onClick={() => applyPresetTemplate(preset)} className="px-4 py-2 rounded-xl bg-purple-600/25 border border-purple-400/40 hover:bg-purple-600 text-xs font-medium transition-all">{preset.label}</button>
                 ))}
               </div>
             </div>
-
             <div className="grid grid-cols-12 gap-6">
               <div className="col-span-6 space-y-4">
                 <div>
                   <label className="text-xs font-mono text-white/60">Lesson / Model Title</label>
-                  <input
-                    type="text"
-                    value={customModelName}
-                    onChange={(e) => setCustomModelName(e.target.value)}
-                    className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 px-3.5 py-2.5 text-sm text-white"
-                  />
+                  <input type="text" value={customModelName} onChange={(e) => setCustomModelName(e.target.value)} className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 px-3.5 py-2.5 text-sm text-white" />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-mono text-white/60">Subject Tag</label>
-                    <input
-                      type="text"
-                      value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value)}
-                      className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-xs font-mono text-purple-200"
-                    />
+                    <input type="text" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-xs font-mono text-purple-200" />
                   </div>
                   <div>
                     <label className="text-xs font-mono text-white/60">Key Formula / Badge</label>
-                    <input
-                      type="text"
-                      value={draftFormula}
-                      onChange={(e) => setDraftFormula(e.target.value)}
-                      className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-xs font-mono text-cyan-200"
-                    />
+                    <input type="text" value={draftFormula} onChange={(e) => setDraftFormula(e.target.value)} className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-xs font-mono text-cyan-200" />
                   </div>
                 </div>
-
                 <div>
                   <label className="text-xs font-mono text-white/60">Lesson Summary Subtitle</label>
-                  <textarea
-                    rows={2}
-                    value={customSummary}
-                    onChange={(e) => setCustomSummary(e.target.value)}
-                    className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 p-3 text-sm text-white"
-                  />
+                  <textarea rows={2} value={customSummary} onChange={(e) => setCustomSummary(e.target.value)} className="mt-1 w-full rounded-xl bg-white/5 border border-white/15 p-3 text-sm text-white" />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-xs font-mono text-white/60">
-                    3 Slide Key Lecture Points (Shown on 2D Slide)
-                  </label>
+                  <label className="text-xs font-mono text-white/60">3 Slide Key Lecture Points (Shown on 2D Slide)</label>
                   {draftBullets.map((b, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      value={b}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setDraftBullets((prev) => prev.map((item, idx) => (idx === i ? val : item)));
-                      }}
-                      className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-xs text-white"
-                    />
+                    <input key={i} type="text" value={b} onChange={(e) => { const val = e.target.value; setDraftBullets((prev) => prev.map((item, idx) => (idx === i ? val : item))); }} className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-xs text-white" />
                   ))}
                 </div>
               </div>
-
               <div className="col-span-6 space-y-3">
-                <label className="text-xs font-mono text-cyan-300 uppercase tracking-wider">
-                  Auto-Detected 3D Sub-Parts ({customProperties.length} Parts):
-                </label>
+                <label className="text-xs font-mono text-cyan-300 uppercase tracking-wider">Auto-Detected 3D Sub-Parts ({customProperties.length} Parts):</label>
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                   {customProperties.map((prop, idx) => (
-                    <div
-                      key={prop.id}
-                      className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2"
-                    >
+                    <div key={prop.id} className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
                       <div className="flex items-center gap-2">
-                        <span
-                          className="px-2 py-0.5 rounded text-[10px] font-mono font-bold text-black"
-                          style={{ backgroundColor: prop.color }}
-                        >
-                          PART 0{idx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={prop.name}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setCustomProperties((prev) =>
-                              prev.map((c) => (c.id === prop.id ? { ...c, name: val } : c))
-                            );
-                          }}
-                          className="flex-1 bg-black/50 border border-white/15 rounded-lg px-2.5 py-1 text-xs font-semibold text-white"
-                        />
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold text-black" style={{ backgroundColor: prop.color }}>PART 0{idx + 1}</span>
+                        <input type="text" value={prop.name} onChange={(e) => { const val = e.target.value; setCustomProperties((prev) => prev.map((c) => (c.id === prop.id ? { ...c, name: val } : c))); }} className="flex-1 bg-black/50 border border-white/15 rounded-lg px-2.5 py-1 text-xs font-semibold text-white" />
                       </div>
-                      <input
-                        type="text"
-                        value={prop.metric}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setCustomProperties((prev) =>
-                            prev.map((c) => (c.id === prop.id ? { ...c, metric: val } : c))
-                          );
-                        }}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-purple-300"
-                      />
-                      <textarea
-                        rows={2}
-                        value={prop.description}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setCustomProperties((prev) =>
-                            prev.map((c) => (c.id === prop.id ? { ...c, description: val } : c))
-                          );
-                        }}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white/80"
-                      />
+                      <input type="text" value={prop.metric} onChange={(e) => { const val = e.target.value; setCustomProperties((prev) => prev.map((c) => (c.id === prop.id ? { ...c, metric: val } : c))); }} className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-purple-300" />
+                      <textarea rows={2} value={prop.description} onChange={(e) => { const val = e.target.value; setCustomProperties((prev) => prev.map((c) => (c.id === prop.id ? { ...c, description: val } : c))); }} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white/80" />
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-
             <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-4">
-              <button
-                type="button"
-                data-magnetic="true"
-                onClick={() => {
-                  setIsBuilderOpen(false);
-                  setMode("3D");
-                }}
-                className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-sm font-medium data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"
-              >
-                Just View in 3D Lab
-              </button>
-              <button
-                type="button"
-                data-magnetic="true"
-                onClick={publishCustomLesson}
-                className="px-7 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold text-sm shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:scale-105 transition-all data-[air-hover=true]:scale-105"
-              >
-                Save to Browser & Launch Slide →
-              </button>
+              <button type="button" data-magnetic="true" onClick={() => { setIsBuilderOpen(false); setMode("3D"); }} className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-sm font-medium data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black">Just View in 3D Lab</button>
+              <button type="button" data-magnetic="true" onClick={publishCustomLesson} className="px-7 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold text-sm shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:scale-105 transition-all data-[air-hover=true]:scale-105">Save to Browser & Launch Slide →</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* LEFT / RIGHT EDGE DWELL NAVIGATION PADS                   */}
-      {/* ========================================================= */}
       {!isAiOpen && (
-        <button
-          data-magnetic="true"
-          onClick={handlePrev}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-16 h-40 rounded-3xl bg-[#080514]/85 border border-white/15 flex flex-col items-center justify-center gap-1.5 backdrop-blur-xl transition-all data-[air-hover=true]:bg-purple-600 data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-105 data-[air-hover=true]:shadow-[0_0_35px_rgba(168,85,247,0.8)]"
-        >
-          <ChevronLeft className="w-7 h-7 text-white" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-white/70">Prev</span>
+        <button data-magnetic="true" onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-16 h-40 rounded-3xl bg-[#080514]/85 border border-white/15 flex flex-col items-center justify-center gap-1.5 backdrop-blur-xl transition-all data-[air-hover=true]:bg-purple-600 data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-105 data-[air-hover=true]:shadow-[0_0_35px_rgba(168,85,247,0.8)]">
+          <ChevronLeft className="w-7 h-7 text-white" /> <span className="text-[10px] font-mono uppercase tracking-widest text-white/70">Prev</span>
         </button>
       )}
 
-      <button
-        data-magnetic="true"
-        onClick={handleNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-16 h-40 rounded-3xl bg-[#080514]/85 border border-white/15 flex flex-col items-center justify-center gap-1.5 backdrop-blur-xl transition-all data-[air-hover=true]:bg-purple-600 data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-105 data-[air-hover=true]:shadow-[0_0_35px_rgba(168,85,247,0.8)]"
-      >
-        <ChevronRight className="w-7 h-7 text-white" />
-        <span className="text-[10px] font-mono uppercase tracking-widest text-white/70">Next</span>
+      <button data-magnetic="true" onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-16 h-40 rounded-3xl bg-[#080514]/85 border border-white/15 flex flex-col items-center justify-center gap-1.5 backdrop-blur-xl transition-all data-[air-hover=true]:bg-purple-600 data-[air-hover=true]:border-cyan-300 data-[air-hover=true]:scale-105 data-[air-hover=true]:shadow-[0_0_35px_rgba(168,85,247,0.8)]">
+        <ChevronRight className="w-7 h-7 text-white" /> <span className="text-[10px] font-mono uppercase tracking-widest text-white/70">Next</span>
       </button>
 
-      {/* ========================================================= */}
-      {/* BOTTOM DOCK                                               */}
-      {/* ========================================================= */}
       <footer className="absolute bottom-5 left-8 z-30 flex items-center gap-3 pointer-events-auto">
         {mode === "3D" ? (
           <div className="flex items-center gap-2 bg-[#080514]/90 border border-white/15 p-2 rounded-2xl backdrop-blur-xl shadow-2xl max-w-[65vw] overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {dockItems.map((item) => {
               const isActive = item.isCustom ? (activeModel === "custom" && customGlbUrl === item.url) : (activeModel === item.id);
               const isDefault = ["atom", "dna", "earth"].includes(item.id);
-
               return (
                 <div key={item.id} className="relative group flex items-center shrink-0">
-                  <button
-                    data-magnetic="true"
-                    onClick={() => {
-                      resetView();
-                      if (item.isCustom) {
-                        setCustomGlbUrl(item.url!); setCustomModelName(item.label); setCustomCategory(item.category!); setCustomSummary(item.summary!); setActiveModel("custom");
-                      } else {
-                        setActiveModel(item.id as StemModelId);
-                      }
-                    }}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition-all ${isActive
-                      ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-                      : "bg-white/5 text-white/70 hover:bg-white/10"
-                      } data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}
-                  >
+                  <button data-magnetic="true" onClick={() => { resetView(); if (item.isCustom) { setCustomGlbUrl(item.url!); setCustomModelName(item.label); setCustomCategory(item.category!); setCustomSummary(item.summary!); setActiveModel("custom"); } else { setActiveModel(item.id as StemModelId); } }} className={`px-4 py-2.5 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition-all ${isActive ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]" : "bg-white/5 text-white/70 hover:bg-white/10"} data-[air-hover=true]:scale-105 data-[air-hover=true]:border data-[air-hover=true]:border-cyan-300`}>
                     {item.label.slice(0, 18)}
                   </button>
-
-                  {/* 🚀 CROSS BUTTON: Hover karne par naye models par Delete ka option aayega */}
                   {!isDefault && (
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        // Agar model local database mein hai toh wahan se storage free karo
-                        if (item.isLocalDB) {
-                          await deleteModelFromDB(item.id);
-                        }
-                        // UI aur dock se model hata do
-                        setDockItems(prev => prev.filter(i => i.id !== item.id));
-                        // Agar wahi model khula hua tha jo delete kiya hai, toh wapas Atom par shift ho jao
-                        if (isActive) {
-                          resetView();
-                          setActiveModel("atom");
-                        }
-                      }}
-                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
-                      title="Remove from Showcase"
-                    >
+                    <button onClick={async (e) => { e.stopPropagation(); if (item.isLocalDB) { await deleteModelFromDB(item.id); } setDockItems(prev => prev.filter(i => i.id !== item.id)); if (isActive) { resetView(); setActiveModel("atom"); } }} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-10" title="Remove from Showcase">
                       <X className="w-2.5 h-2.5" />
                     </button>
                   )}
                 </div>
               );
             })}
-
-            {/* Agar koi model showcase mein nahi hai lekin open hai, usay alag se dikhayein */}
             {!dockItems.some(i => i.isCustom && i.url === customGlbUrl) && activeModel === "custom" && customGlbUrl && (
-              <button
-                data-magnetic="true"
-                onClick={() => { resetView(); setActiveModel("custom"); }}
-                className="px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all capitalize bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-              >
-                {customModelName.slice(0, 18)}
-              </button>
+              <button data-magnetic="true" onClick={() => { resetView(); setActiveModel("custom"); }} className="px-4 py-2.5 rounded-xl text-xs font-mono font-semibold transition-all capitalize bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)]">{customModelName.slice(0, 18)}</button>
             )}
-
-            <button
-              data-magnetic="true"
-              onClick={() => { glbInputRef.current?.click(); }}
-              className="px-4 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-1.5 shrink-0 transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black ml-2"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Upload .GLB</span>
+            <button data-magnetic="true" onClick={() => { glbInputRef.current?.click(); }} className="px-4 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-1.5 shrink-0 transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black ml-2">
+              <Upload className="w-3.5 h-3.5" /> <span>Upload .GLB</span>
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-3 bg-[#080514]/90 border border-white/15 px-4 py-2 rounded-2xl backdrop-blur-xl shadow-2xl">
-            <span className="text-xs font-mono text-white/50">
-              SLIDE 0{slideIndex + 1} / 0{slides.length}
-            </span>
-            <button
-              data-magnetic="true"
-              onClick={() => {
-                setCustomProperties([]);
-                glbInputRef.current?.click();
-              }}
-              className="px-4 py-2 rounded-xl bg-purple-500/20 border border-purple-400/40 text-purple-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all data-[air-hover=true]:bg-purple-500 data-[air-hover=true]:text-white"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Create 3D Lesson (.GLB)</span>
+            <span className="text-xs font-mono text-white/50">SLIDE 0{slideIndex + 1} / 0{slides.length}</span>
+            <button data-magnetic="true" onClick={() => { setCustomProperties([]); glbInputRef.current?.click(); }} className="px-4 py-2 rounded-xl bg-purple-500/20 border border-purple-400/40 text-purple-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all data-[air-hover=true]:bg-purple-500 data-[air-hover=true]:text-white">
+              <Upload className="w-3.5 h-3.5" /> <span>Create 3D Lesson (.GLB)</span>
             </button>
-            <button
-              data-magnetic="true"
-              onClick={() => slideInputRef.current?.click()}
-              className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Upload Slides</span>
+            <button data-magnetic="true" onClick={() => slideInputRef.current?.click()} className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all data-[air-hover=true]:bg-cyan-400 data-[air-hover=true]:text-black">
+              <Upload className="w-3.5 h-3.5" /> <span>Upload Slides</span>
             </button>
           </div>
         )}
       </footer>
 
-      {/* ========================================================= */}
-      {/* BIOMECHANICAL 21-JOINT SKELETON HUD OVERLAY               */}
-      {/* ========================================================= */}
-      <div
-        className={`absolute bottom-5 right-6 z-30 rounded-2xl border border-purple-500/50 overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)] bg-black transition-all duration-300 ${isCinemaMode ? "w-32 opacity-50" : "w-52 opacity-100"
-          }`}
-      >
+      <div className={`absolute bottom-5 right-6 z-30 rounded-2xl border border-purple-500/50 overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)] bg-black transition-all duration-300 ${isCinemaMode ? "w-32 opacity-50" : "w-52 opacity-100"}`}>
         <div className="relative w-full aspect-video">
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            className="w-full h-full object-cover -scale-x-100 opacity-75"
-          />
-          <canvas
-            ref={skeletonCanvasRef}
-            width={240}
-            height={135}
-            className="absolute inset-0 w-full h-full pointer-events-none"
-          />
+          <video ref={videoRef} playsInline muted className="w-full h-full object-cover -scale-x-100 opacity-75" />
+          <canvas ref={skeletonCanvasRef} width={240} height={135} className="absolute inset-0 w-full h-full pointer-events-none" />
         </div>
       </div>
 
-      {/* TOUCHLESS CURSOR WITH RADIAL DWELL PROGRESS RING */}
-      <div
-        ref={cursorDomRef}
-        className="pointer-events-none fixed top-0 left-0 z-50 w-12 h-12 flex items-center justify-center transition-transform duration-75 ease-out"
-      >
+      <div ref={cursorDomRef} className="pointer-events-none fixed top-0 left-0 z-50 w-12 h-12 flex items-center justify-center transition-transform duration-75 ease-out">
         <svg className="w-12 h-12 -rotate-90" viewBox="0 0 44 44">
-          <circle
-            cx="22"
-            cy="22"
-            r="18"
-            fill="rgba(168, 85, 247, 0.18)"
-            stroke="rgba(168, 85, 247, 0.7)"
-            strokeWidth="2"
-          />
-          <circle
-            ref={dwellRingRef}
-            cx="22"
-            cy="22"
-            r="18"
-            fill="none"
-            stroke="#22d3ee"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeDasharray="113"
-            strokeDashoffset="113"
-            className="transition-[stroke-dashoffset] duration-75"
-          />
+          <circle cx="22" cy="22" r="18" fill="rgba(168, 85, 247, 0.18)" stroke="rgba(168, 85, 247, 0.7)" strokeWidth="2" />
+          <circle ref={dwellRingRef} cx="22" cy="22" r="18" fill="none" stroke="#22d3ee" strokeWidth="3.5" strokeLinecap="round" strokeDasharray="113" strokeDashoffset="113" className="transition-[stroke-dashoffset] duration-75" />
         </svg>
         <div className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_10px_#fff]" />
       </div>
 
-      {/* 3D LIBRARY MODAL */}
-      <ModelLibraryModal
-        isOpen={isLibraryOpen}
-        onClose={() => setIsLibraryOpen(false)}
-        onImportCloudModel={handleImportCloudModel}
-        onImportSketchfabModel={handleImportSketchfabModel}
-      />
+      <ModelLibraryModal isOpen={isLibraryOpen} onClose={() => setIsLibraryOpen(false)} onImportCloudModel={handleImportCloudModel} onImportSketchfabModel={handleImportSketchfabModel} />
     </main>
   );
 }
