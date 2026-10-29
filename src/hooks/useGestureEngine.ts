@@ -21,6 +21,7 @@ export interface GestureEngineState {
 
 interface UseGestureEngineOptions {
   smoothing?: number;
+  isTrackingPaused?: boolean; // 👈 Nayi option add kardi gayi hai
 }
 
 const HAND_CONNECTIONS: [number, number][] = [
@@ -31,10 +32,9 @@ const HAND_CONNECTIONS: [number, number][] = [
   [13, 17], [0, 17], [17, 18], [18, 19], [19, 20] // Pinky & Palm
 ];
 
-// 🚀 Strict Mode Tracking
 type InteractionMode = 'NONE' | 'UI_HOVER' | 'ROTATE' | 'ZOOM' | 'FIST';
 
-export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions = {}) {
+export function useGestureEngine({ smoothing = 0.35, isTrackingPaused = false }: UseGestureEngineOptions = {}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const skeletonCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cursorDomRef = useRef<HTMLDivElement | null>(null);
@@ -43,6 +43,12 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
   const [isReady, setIsReady] = useState(false);
   const [activeGestureLabel, setActiveGestureLabel] = useState<string>("INITIALIZING TOUCHLESS AI VISION...");
   const [isDissecting, setIsDissecting] = useState(false);
+
+  // 🚀 Track pause state via ref so loop can read it instantly
+  const isPausedRef = useRef(isTrackingPaused);
+  useEffect(() => {
+    isPausedRef.current = isTrackingPaused;
+  }, [isTrackingPaused]);
 
   const engineState = useRef<GestureEngineState>({
     rotationX: 0.2, rotationY: -0.4, scale: 1, panX: 0, panY: 0,
@@ -55,14 +61,11 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
   const wasPinchingRef = useRef(false);
   const wasFistRef = useRef(false);
 
-  // Zoom Refs
   const prevDualDistance = useRef<number | null>(null);
   const prevDualMidpoint = useRef<{ x: number; y: number } | null>(null);
 
-  // Strict Action Lock State
   const interactionMode = useRef<InteractionMode>('NONE');
 
-  // UI Hover Refs
   const hoveredElementRef = useRef<HTMLElement | null>(null);
   const hoverStartTimeRef = useRef<number>(0);
   const dwellTriggeredRef = useRef<boolean>(false);
@@ -135,7 +138,7 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
           playSciFiSound('hover');
         }
 
-        const progress = Math.min(1, (performance.now() - hoverStartTimeRef.current) / 1200); // 1.2s delay
+        const progress = Math.min(1, (performance.now() - hoverStartTimeRef.current) / 1200);
         if (dwellRingRef.current) dwellRingRef.current.style.strokeDashoffset = `${113 * (1 - progress)}`;
 
         if (progress >= 1 && !dwellTriggeredRef.current) {
@@ -152,7 +155,7 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
     const isHandFist = (hand: any[]) => {
       const wrist = hand[0];
       const tips = [8, 12, 16, 20];
-      const pips = [6, 10, 14, 18]; // STRICT FIST: Compare fingertips to Middle Knuckles
+      const pips = [6, 10, 14, 18];
       let curled = 0;
       for (let i = 0; i < 4; i++) {
         const distTip = Math.hypot(hand[tips[i]].x - wrist.x, hand[tips[i]].y - wrist.y);
@@ -205,6 +208,14 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
 
     function detectLoop() {
       if (isCancelled) return;
+
+      // 🛑 AGAR TRACKING PAUSED HAI TOH DETECTION LOOP BILKUL SKIP HO JAYEGI!
+      if (isPausedRef.current) {
+        clearUIHover();
+        animationFrameId = requestAnimationFrame(detectLoop);
+        return;
+      }
+
       const video = videoRef.current;
       if (video && landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
@@ -219,9 +230,8 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
           setLabelSafe("SHOW HAND TO CONTROL LAB");
           drawBiomechanicalSkeleton([], false, false);
         } else {
-          // 1. Move Cursor
           const indexTip1 = hands[0][8];
-          const SENSITIVITY = 1.9; // Amplified sensitivity for ease of reach
+          const SENSITIVITY = 1.9;
           let normX = Math.max(0, Math.min(1, 0.5 + (indexTip1.x - 0.5) * SENSITIVITY));
           let normY = Math.max(0, Math.min(1, 0.5 + (indexTip1.y - 0.5) * SENSITIVITY));
           const rawX = (1 - normX) * window.innerWidth;
@@ -243,7 +253,6 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
           const fist1 = isHandFist(hand1);
           const pinch1 = !fist1 && isHandPinching(hand1);
 
-          // 2. Strict Actions Evaluation
           if (hands.length >= 2) {
             const hand2 = hands[1];
             const fist2 = isHandFist(hand2);
@@ -251,15 +260,13 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
 
             drawBiomechanicalSkeleton(hands, fist1 || fist2, pinch1 || pinch2);
 
-            // 🚀 DUAL FISTS = STRICTLY ZOOM/PAN
             if (fist1 && fist2) {
               interactionMode.current = 'ZOOM';
-              engineState.current.isFist = false; // Disable dissection while zooming
+              engineState.current.isFist = false;
               setIsDissecting(false);
               wasFistRef.current = false;
               clearUIHover();
 
-              // Palm center points for more stable tracking during fist
               const p1 = hand1[9]; 
               const p2 = hand2[9];
               const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
@@ -267,12 +274,8 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
               const midY = (p1.y + p2.y) / 2;
 
               if (prevDualDistance.current !== null && prevDualMidpoint.current !== null) {
-                // Zoom
                 engineState.current.scale = Math.min(2.8, Math.max(0.45, engineState.current.scale + (dist - prevDualDistance.current) * 3.5));
-                
-                // 🚨 PAN FIX: Left/Right natural movement (+)
                 engineState.current.panX = Math.max(-2.2, Math.min(2.2, engineState.current.panX + (midX - prevDualMidpoint.current.x) * 5.5));
-                
                 engineState.current.panY = Math.max(-1.5, Math.min(1.5, engineState.current.panY - (midY - prevDualMidpoint.current.y) * 3.5));
               }
               prevDualDistance.current = dist;
@@ -285,7 +288,6 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
               handleSingleHand(hand1, fist1, pinch1, curX, curY);
             }
           } else {
-            // SINGLE HAND MODE
             prevDualDistance.current = null;
             prevDualMidpoint.current = null;
             drawBiomechanicalSkeleton(hands, fist1, pinch1);
@@ -306,7 +308,6 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
       curY: number
     ) {
       if (fist1) {
-        // 🚀 SINGLE FIST = STRICTLY DISSECT
         interactionMode.current = 'FIST';
         engineState.current.isFist = true;
         setIsDissecting(true);
@@ -321,7 +322,6 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
         wasFistRef.current = false;
 
         if (pinch1) {
-          // 🚀 PINCH STARTED!
           if (interactionMode.current === 'NONE' || interactionMode.current === 'UI_HOVER') {
             const el = document.elementFromPoint(curX, curY) as HTMLElement | null;
             const magneticTarget = el?.closest('[data-magnetic="true"]') as HTMLElement | null;
@@ -338,7 +338,6 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
             }
           }
 
-          // If Locked into ROTATE Mode, do rotation (Ignore buttons)
           if (interactionMode.current === 'ROTATE' && prevSinglePinch.current) {
             const dx = (curX - prevSinglePinch.current.x) * 0.012;
             const dy = (curY - prevSinglePinch.current.y) * 0.012;
@@ -348,10 +347,9 @@ export function useGestureEngine({ smoothing = 0.35 }: UseGestureEngineOptions =
             setLabelSafe("PINCH DRAG • ROTATING 360°");
           }
         } else {
-          // 🚀 COMPLETELY OPEN HAND
           interactionMode.current = 'NONE';
           prevSinglePinch.current = null;
-          updateMagneticUIHover(curX, curY); // Allow Dwell Hover only when open hand
+          updateMagneticUIHover(curX, curY);
         }
       }
     }
